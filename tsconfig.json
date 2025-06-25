@@ -6,12 +6,15 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "jsx": "react-native", // or "react-jsx" if using React 17+
+    "lib": ["dom", "esnext"],
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+  ],
+  "types": ["react", "react-native"]
 }
