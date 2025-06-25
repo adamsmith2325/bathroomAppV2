@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TextInput, Button, FlatList, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TextInput,
+  Button,
+  FlatList,
+  Alert,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import { useTheme } from '../lib/themeContext';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../lib/useSession';
@@ -113,6 +124,21 @@ export default function MapScreen() {
     }
   };
 
+  const handleGetDirections = () => {
+    if (!selectedBathroom) return;
+    const { lat, lng } = selectedBathroom;
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?daddr=${lat},${lng}`,
+      android: `google.navigation:q=${lat},${lng}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch(() =>
+        Alert.alert('Error', 'Unable to open directions.')
+      );
+    }
+  };
+
   if (!location) {
     return <Text style={{ flex: 1, textAlign: 'center', marginTop: 100 }}>Getting location…</Text>;
   }
@@ -173,7 +199,11 @@ export default function MapScreen() {
                 </Text>
 
                 <View style={{ marginTop: 12 }}>
-                  <Button title="Mark as Used" onPress={handleMarkUsed} />
+                  <Button title="👍 Mark as Used" onPress={handleMarkUsed} />
+                </View>
+
+                <View style={{ marginTop: 12 }}>
+                  <Button title="🧭 Get Directions" onPress={handleGetDirections} />
                 </View>
               </View>
 
