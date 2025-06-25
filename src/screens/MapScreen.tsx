@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TextInput, Button, FlatList, Alert } from 'react-native';
+import { View, Text, Modal, TextInput, Button, FlatList, Alert, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useTheme } from '../lib/themeContext';
@@ -32,8 +32,8 @@ export default function MapScreen() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [usageCount, setUsageCount] = useState<number>(0);
 
-  // Get user location
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -50,21 +50,14 @@ export default function MapScreen() {
     })();
   }, []);
 
-  // Load bathrooms from Supabase
   useEffect(() => {
     const fetchBathrooms = async () => {
       const { data, error } = await supabase.from('bathrooms').select('*');
-      if (error) {
-        console.error('Error loading bathrooms:', error);
-      } else {
-        setBathrooms(data);
-      }
+      if (!error && data) setBathrooms(data);
     };
-
     fetchBathrooms();
   }, []);
 
-  // Load comments for selected bathroom
   const fetchComments = async (bathroomId: string) => {
     const { data, error } = await supabase
       .from('comments')
@@ -72,18 +65,23 @@ export default function MapScreen() {
       .eq('bathroom_id', bathroomId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error loading comments:', error);
-    } else {
-      setComments(data);
-    }
+    if (!error && data) setComments(data);
   };
 
-  // Handle marker press
+  const fetchUsageCount = async (bathroomId: string) => {
+    const { count, error } = await supabase
+      .from('bathroom_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('bathroom_id', bathroomId);
+
+    if (!error && typeof count === 'number') setUsageCount(count);
+  };
+
   const handleMarkerPress = (bathroom: Bathroom) => {
     setSelectedBathroom(bathroom);
     setModalVisible(true);
     fetchComments(bathroom.id);
+    fetchUsageCount(bathroom.id);
   };
 
   const handleCommentSubmit = async () => {
@@ -95,20 +93,29 @@ export default function MapScreen() {
       text: newComment.trim(),
     });
 
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
+    if (!error) {
       setNewComment('');
       fetchComments(selectedBathroom.id);
     }
   };
 
-  const handleMarkUsed = () => {
-    // Future: Insert into `bathroom_usage` or update analytics
-    Alert.alert('Marked', 'You marked this bathroom as used!');
+  const handleMarkUsed = async () => {
+    if (!selectedBathroom || !user) return;
+
+    const { error } = await supabase.from('bathroom_usage').insert({
+      bathroom_id: selectedBathroom.id,
+      user_id: user.id,
+    });
+
+    if (!error) {
+      fetchUsageCount(selectedBathroom.id);
+      Alert.alert('👍', 'Thanks for marking this bathroom as used!');
+    }
   };
 
-  if (!location) return <Text style={{ flex: 1, textAlign: 'center', marginTop: 100 }}>Getting location…</Text>;
+  if (!location) {
+    return <Text style={{ flex: 1, textAlign: 'center', marginTop: 100 }}>Getting location…</Text>;
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -129,29 +136,50 @@ export default function MapScreen() {
             onPress={() => handleMarkerPress(b)}
           />
         ))}
+        <Marker coordinate={location} title="You are here" pinColor="blue" />
       </MapView>
 
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 20 }}>
           {selectedBathroom && (
             <>
-              <Text style={{ color: theme.colors.text, fontSize: 20, marginBottom: 8 }}>
-                🚻 {selectedBathroom.title}
+              <View style={{
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.borderRadius.md,
+                padding: theme.spacing.md,
+                shadowColor: '#000',
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                marginBottom: 20,
+              }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.text }}>
+                  🚻 {selectedBathroom.title}
+                </Text>
+
+                {selectedBathroom.entry_code && (
+                  <Text style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+                    🔐 Code: {selectedBathroom.entry_code}
+                  </Text>
+                )}
+
+                {selectedBathroom.instructions && (
+                  <Text style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+                    📝 Instructions: {selectedBathroom.instructions}
+                  </Text>
+                )}
+
+                <Text style={{ marginTop: 12, fontSize: 16, color: theme.colors.primary }}>
+                  🚶 Used {usageCount} {usageCount === 1 ? 'time' : 'times'}
+                </Text>
+
+                <View style={{ marginTop: 12 }}>
+                  <Button title="Mark as Used" onPress={handleMarkUsed} />
+                </View>
+              </View>
+
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.colors.text, marginBottom: 6 }}>
+                💬 Comments
               </Text>
-              {selectedBathroom.entry_code ? (
-                <Text style={{ color: theme.colors.textSecondary, marginBottom: 4 }}>
-                  Code: {selectedBathroom.entry_code}
-                </Text>
-              ) : null}
-              {selectedBathroom.instructions ? (
-                <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-                  Instructions: {selectedBathroom.instructions}
-                </Text>
-              ) : null}
-
-              <Button title="Mark as Used" onPress={handleMarkUsed} />
-
-              <Text style={{ marginTop: 20, color: theme.colors.text, fontWeight: 'bold' }}>Comments</Text>
 
               <FlatList
                 data={comments}
@@ -162,7 +190,7 @@ export default function MapScreen() {
                   </Text>
                 )}
                 ListEmptyComponent={<Text style={{ color: theme.colors.textSecondary }}>No comments yet.</Text>}
-                style={{ maxHeight: 200, marginVertical: 12 }}
+                style={{ maxHeight: 200, marginBottom: 16 }}
               />
 
               <TextInput
@@ -180,9 +208,16 @@ export default function MapScreen() {
                 }}
               />
               <Button title="Submit Comment" onPress={handleCommentSubmit} />
-              <View style={{ marginTop: 20 }}>
-                <Button title="Close" onPress={() => setModalVisible(false)} color={theme.colors.error} />
-              </View>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 20 }}>
+                <Text style={{
+                  textAlign: 'center',
+                  color: theme.colors.error,
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                }}>
+                  Close
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
