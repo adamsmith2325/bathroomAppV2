@@ -1,20 +1,22 @@
+import { AdMobBanner } from 'expo-ads-admob';
+import * as Linking from 'expo-linking';
+import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  TextInput,
+  Alert,
   Button,
   FlatList,
-  Alert,
-  TouchableOpacity,
+  Modal,
   Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import * as Location from 'expo-location';
-import * as Linking from 'expo-linking';
-import { useTheme } from '../lib/themeContext';
+
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
 
 interface Bathroom {
@@ -35,7 +37,7 @@ interface Comment {
 
 export default function MapScreen() {
   const { theme } = useTheme();
-  const { user } = useSession();
+  const { user, isPremium } = useSession();
 
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [bathrooms, setBathrooms] = useState<Bathroom[]>([]);
@@ -248,6 +250,24 @@ export default function MapScreen() {
                   Close
                 </Text>
               </TouchableOpacity>
+
+              {/* ✅ Show ad only for free users */}
+              {!isPremium && (
+                <View style={{ marginTop: 24 }}>
+                  <AdMobBanner
+                    bannerSize="smartBannerPortrait"
+                    adUnitID={
+                      Platform.OS === 'ios'
+                        ? 'ca-app-pub-5901242452853695/3188072947' // ← replace with your real iOS ID
+                        : 'ca-app-pub-5901242452853695/4501154615' // ← replace with your real Android ID
+                    }
+                    servePersonalizedAds
+                    onDidFailToReceiveAdWithError={(err) =>
+                      console.log('Ad error', err)
+                    }
+                  />
+                </View>
+              )}
             </>
           )}
         </View>

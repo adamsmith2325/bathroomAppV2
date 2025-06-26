@@ -1,19 +1,38 @@
 // src/navigation/index.tsx
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 import { useSession } from '../lib/useSession';
 import { AuthScreen } from '../screens/AuthScreen';
-import { MainTabs } from './BottomTabNavigator'; // ✅ aliased
+import MainTabs from './BottomTabNavigator';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['bathroomappv2://'],
+  config: {
+    screens: {
+      Auth: 'auth',
+      MainTabs: {
+        // optional `path` if you want a URL segment other than '':
+        path: '',
+        screens: {
+          Map: 'map',
+          Add: 'add',
+          Account: 'account',
+        },
+      },
+    },
+  },
+};
+
 export function RootNavigator() {
   const { session } = useSession();
-  console.log('Session:', session)
+  console.log('Session:', session);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {session ? (
           <Stack.Screen name="MainTabs" component={MainTabs} />

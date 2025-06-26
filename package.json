@@ -18,12 +18,14 @@
     "@supabase/supabase-js": "^2.50.1",
     "dotenv": "^16.5.0",
     "expo": "~53.0.12",
+    "expo-ads-admob": "^13.0.0",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.6",
     "expo-font": "~13.3.1",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.3.0",
     "expo-linking": "~7.1.5",
+    "expo-location": "~18.1.5",
     "expo-splash-screen": "~0.30.9",
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",
@@ -39,7 +41,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "expo-location": "~18.1.5"
+    "supabase": "^2.26.9"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

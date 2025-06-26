@@ -1,10 +1,17 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabase';
 import type { Session, User } from '@supabase/supabase-js';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { supabase } from './supabase';
 
 interface SessionContextType {
   session: Session | null;
   user: User | null;
+  isPremium: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -12,92 +19,97 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType>({} as any);
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isPremium, setIsPremium] = useState<boolean>(false);
 
-  // Load initial session and listen to auth changes
+  // Fetch session and listen for changes
   useEffect(() => {
-    const getInitialSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.warn('Failed to get initial session:', error.message);
-      }
-      console.log('Initial session:', data.session);
+    const loadInitialSession = async () => {
+      const { data } = await supabase.auth.getSession();
       setSession(data.session);
       setUser(data.session?.user ?? null);
     };
 
-    getInitialSession();
+    loadInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state change:', session);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      listener.subscription.unsubscribe();
     };
   }, []);
 
+  // Fetch is_premium from profiles
+  useEffect(() => {
+    const fetchPremiumStatus = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_premium')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data) {
+        setIsPremium(data.is_premium);
+      } else {
+        console.warn('Failed to fetch is_premium:', error?.message);
+      }
+    };
+
+    fetchPremiumStatus();
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
-    console.log('Signing in...');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    if (error) {
-      console.error('SignIn error:', error.message);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('SignIn success:', data.session);
     setSession(data.session);
     setUser(data.user);
   };
 
   const signUp = async (email: string, password: string) => {
-    console.log('Signing up...');
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-    if (error) {
-      console.error('SignUp error:', error.message);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('SignUp result:', data);
-
-    // If session is returned (i.e. email confirmation is OFF), set it immediately
     if (data.session) {
       setSession(data.session);
       setUser(data.user);
     }
 
-    // Create profile entry
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ id: data.user.id, dark_mode: true });
-
-      if (profileError) {
-        console.warn('Profile insert error:', profileError.message);
-      }
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        dark_mode: true,
+        is_premium: false, // default to false
+      });
     }
   };
 
   const signOut = async () => {
-    console.log('Signing out...');
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('SignOut error:', error.message);
-      throw error;
-    }
-
+    await supabase.auth.signOut();
     setSession(null);
     setUser(null);
+    setIsPremium(false);
   };
 
   return (
-    <SessionContext.Provider value={{ session, user, signIn, signUp, signOut }}>
+    <SessionContext.Provider
+      value={{ session, user, isPremium, signIn, signUp, signOut }}
+    >
       {children}
     </SessionContext.Provider>
   );
