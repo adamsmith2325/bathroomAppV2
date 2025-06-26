@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../supabase/index';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
 

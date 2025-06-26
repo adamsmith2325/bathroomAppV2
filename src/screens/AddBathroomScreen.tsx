@@ -1,11 +1,11 @@
 // src/screens/AddBathroomScreen.tsx
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, Alert, Button, KeyboardAvoidingView, Platform } from 'react-native';
-import MapView, { Marker, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useSession } from '../lib/useSession';
+import React, { useEffect, useState } from 'react';
+import { Alert, Button, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import MapView, { MapPressEvent, Marker } from 'react-native-maps';
+import { supabase } from '../../supabase/index';
 import { useTheme } from '../lib/themeContext';
-import { supabase } from '../lib/supabase';
+import { useSession } from '../lib/useSession';
 
 export default function AddBathroomScreen() {
   const { theme } = useTheme();

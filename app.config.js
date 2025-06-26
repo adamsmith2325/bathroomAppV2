@@ -9,21 +9,27 @@ export default {
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
-    scheme: 'bathroomappv2',              // ← ADD THIS
-    newArchEnabled: true,
-    ios: { supportsTablet: true },
+    scheme: 'bathroomappv2',
     android: {
+      package: 'com.prismixlabs.bathroomappv2',    // ← REQUIRED: choose your reverse-domain ID
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
     },
-    experiments: { typedRoutes: true },
+    ios: {
+      bundleIdentifier: 'com.prismixlabs.bathroomappv2',  // ← RECOMMENDED: match your Android package
+      supportsTablet: true,
+    },
+    newArchEnabled: true,
+    experiments: {
+      typedRoutes: true,
+    },
     extra: {
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      APP_SCHEME: 'bathroomappv2',         // ← OPTIONAL: expose to your JS
+      APP_SCHEME: 'bathroomappv2',
     },
   },
 };
