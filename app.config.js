@@ -7,7 +7,7 @@ export default {
     slug: 'bathroomAppV2',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/icons/loo-pin.png',
     userInterfaceStyle: 'automatic',
     scheme: 'bathroomappv2',
     android: {

@@ -1,12 +1,12 @@
 // src/screens/AuthScreen.styles.ts
-import type { ViewStyle, TextStyle } from 'react-native';
-import type { Theme } from '../design/theme';
+import type { TextStyle, ViewStyle } from 'react-native'
+import type { Theme } from '../design/theme'
 
 export const styles: {
-  container: (theme: Theme) => ViewStyle;
-  title:     (theme: Theme) => TextStyle;
-  input:     (theme: Theme) => TextStyle;
-  buttonsRow: ViewStyle;
+  container: (theme: Theme) => ViewStyle
+  title:     (theme: Theme) => TextStyle
+  input:     (theme: Theme) => TextStyle
+  buttonsRow: ViewStyle
 } = {
   container: (theme) => ({
     flex: 1,
@@ -18,7 +18,6 @@ export const styles: {
   title: (theme) => ({
     color: theme.colors.text,
     fontSize: theme.typography.header.fontSize,
-    // Cast fontWeight to the exact TextStyle union
     fontWeight: theme.typography.header.fontWeight as TextStyle['fontWeight'],
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
@@ -33,6 +32,9 @@ export const styles: {
   }),
   buttonsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between', // push them to the edges
+    width: '100%',                    // take full width
+    paddingHorizontal: 65,            // optional: add some side padding
+    marginTop: 16,                    // optional: space from inputs
   } as ViewStyle,
-};
+}

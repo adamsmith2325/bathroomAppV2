@@ -1,62 +1,45 @@
 // src/lib/themeContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { lightTheme, darkTheme, Theme } from '../design/theme';
-import { useSession } from './useSession';
-import { supabase } from './supabase';
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useState,
+} from 'react'
+import { darkTheme, lightTheme, Theme } from '../design/theme'
 
-interface ThemeContextValue {
-  theme: Theme;
-  isDarkMode: boolean;
-  toggleTheme: () => void;
+type ThemeMode = 'light' | 'dark'
+
+interface ThemeContextType {
+  theme: Theme
+  toggleTheme: () => void
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
+// Default to lightTheme so server renders match client
+const ThemeContext = createContext<ThemeContextType>({
   theme: lightTheme,
-  isDarkMode: false,
   toggleTheme: () => {},
-});
+})
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const { user } = useSession();
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [mode, setMode] = useState<ThemeMode>('light')
+  const theme = mode === 'light' ? lightTheme : darkTheme
 
-  useEffect(() => {
-    const loadThemePreference = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('dark_mode')
-          .eq('id', user.id)
-          .single();
-
-        if (!error && data?.dark_mode !== undefined) {
-          setIsDarkMode(data.dark_mode);
-        }
-      }
-    };
-
-    loadThemePreference();
-  }, [user]);
-
-  const toggleTheme = async () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ dark_mode: newMode })
-        .eq('id', user.id);
-    }
-  };
-
-  const theme = isDarkMode ? darkTheme : lightTheme;
+  const toggleTheme = () => {
+    setMode((prev) => (prev === 'light' ? 'dark' : 'light'))
+  }
 
   return (
-    <ThemeContext.Provider value={{ theme, isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
-  );
-};
+  )
+}
 
-export const useTheme = () => useContext(ThemeContext);
+// Hook for components/screens to read & update theme
+export const useTheme = () => {
+  const context = useContext(ThemeContext)
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider')
+  }
+  return context
+}

@@ -1,4 +1,4 @@
-import { AdMobBanner } from 'expo-ads-admob';
+// import { AdMobBanner } from 'expo-ads-admob';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -250,11 +250,11 @@ export default function MapScreen() {
                   Close
                 </Text>
               </TouchableOpacity>
-
+              
               {/* ✅ Show ad only for free users */}
               {!isPremium && (
                 <View style={{ marginTop: 24 }}>
-                  <AdMobBanner
+                 {/* <AdMobBanner
                     bannerSize="smartBannerPortrait"
                     adUnitID={
                       Platform.OS === 'ios'
@@ -265,11 +265,11 @@ export default function MapScreen() {
                     onDidFailToReceiveAdWithError={(err) =>
                       console.log('Ad error', err)
                     }
-                  />
+                  /> */}
                 </View>
               )}
             </>
-          )}
+          )} 
         </View>
       </Modal>
     </View>
