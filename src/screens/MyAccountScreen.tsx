@@ -67,31 +67,49 @@ export default function MyAccountScreen() {
     setSaving(false)
   }
 
-  // Open Stripe checkout via your Supabase Edge Function
+  // Open Stripe checkout via your Supabase Edge Function using fetch
   const handleUpgrade = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke<{ url: string }>(
-        'create-checkout-session',
-        {
-          body: { priceId: 'price_1ReMraAmjjNRDdy4UPN7Nlam' },
-        }
-      )
+    const funcUrl =
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`
+    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
-      // Handle any function-level error
-      if (error) {
-        console.error('Function invoke error:', error)
-        Alert.alert('Upgrade failed', error.message)
+    try {
+      const resp = await fetch(funcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ priceId: 'price_1ReMraAmjjNRDdy4UPN7Nlam' }),
+      })
+
+      const text = await resp.text()
+
+      if (!resp.ok) {
+        console.error(`Function error (${resp.status}):`, text)
+        Alert.alert(
+          `Upgrade failed (${resp.status})`,
+          text.length > 200 ? text.slice(0, 200) + '…' : text
+        )
         return
       }
 
-      // Ensure the function returned a URL
-      if (!data?.url) {
+      let data: { url?: string }
+      try {
+        data = JSON.parse(text)
+      } catch {
+        console.error('Invalid JSON from function:', text)
+        Alert.alert('Upgrade failed', 'Invalid response from server.')
+        return
+      }
+
+      if (!data.url) {
         console.error('Function returned no url field:', data)
         Alert.alert('Upgrade failed', 'No checkout URL returned.')
         return
       }
 
-      // Launch the Stripe Checkout page
       await WebBrowser.openBrowserAsync(data.url)
     } catch (err: any) {
       console.error('Unexpected upgrade error:', err)
@@ -153,11 +171,7 @@ export default function MyAccountScreen() {
 
       {/* Sign Out Button */}
       <View style={{ width: '100%', marginBottom: theme.spacing.lg }}>
-        <Button
-          title="Sign Out"
-          onPress={signOut}
-          color={theme.colors.error}
-        />
+        <Button title="Sign Out" onPress={signOut} color={theme.colors.error} />
       </View>
 
       {/* Dark Mode Toggle */}
