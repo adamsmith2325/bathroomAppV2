@@ -11,7 +11,7 @@ export default {
     userInterfaceStyle: 'automatic',
     scheme: 'bathroomappv2',
     android: {
-      package: 'com.prismixlabs.bathroomappv2',    // ← REQUIRED: choose your reverse-domain ID
+      package: 'com.prismixlabs.bathroomappv2',
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
@@ -19,10 +19,10 @@ export default {
       edgeToEdgeEnabled: true,
     },
     ios: {
-      bundleIdentifier: 'com.prismixlabs.bathroomappv2',  // ← RECOMMENDED: match your Android package
+      bundleIdentifier: 'com.prismixlabs.bathroomappv2',
       supportsTablet: true,
       infoPlist: {
-      "ITSAppUsesNonExemptEncryption": false
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     newArchEnabled: true,
@@ -34,18 +34,18 @@ export default {
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       APP_SCHEME: 'bathroomappv2',
       eas: {
-        projectId: "481da270-bcf7-4904-8a63-7221c7b46f29",
-      }
+        projectId: '481da270-bcf7-4904-8a63-7221c7b46f29',
+      },
     },
-        "plugins": [
+    plugins: [
       [
-        "expo-ads-admob",
+        'react-native-google-mobile-ads',
         {
-          // replace with your actual AdMob App ID from Firebase / AdMob console:
-          "appIdAndroid": "ca-app-pub-5901242452853695~2399952491",
-          "appIdIOS":     "ca-app-pub-5901242452853695~2944530360"
-        }
-      ]
-    ]
+          // Your AdMob App IDs from the AdMob console:
+          android_app_id: 'ca-app-pub-5901242452853695~2399952491',
+          ios_app_id: 'ca-app-pub-5901242452853695~2944530360',
+        },
+      ],
+    ],
   },
 };

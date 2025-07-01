@@ -1,5 +1,3 @@
-// import { AdMobBanner } from 'expo-ads-admob';
-import { AdMobBanner, setTestDeviceIDAsync } from 'expo-ads-admob';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -14,6 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {
+  BannerAd,
+  BannerAdSize,
+  TestIds,
+} from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 
 import { supabase } from '../../supabase/index';
@@ -47,11 +50,6 @@ export default function MapScreen() {
   const [newComment, setNewComment] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [usageCount, setUsageCount] = useState<number>(0);
-
-    // Register emulator as a test device and load markers
-  useEffect(() => {
-    setTestDeviceIDAsync('TESTMOTOG');
-  }, []);
   
   useEffect(() => {
     (async () => {
@@ -278,14 +276,25 @@ export default function MapScreen() {
           )} 
         </View>
       </Modal>
-      <AdMobBanner
-        bannerSize="fullBanner"
-        adUnitID="ca-app-pub-5901242452853695/4501154615" // Expo test ID
-        servePersonalizedAds // set to false if you want non-personalized
-        onDidFailToReceiveAdWithError={(err) =>
-          console.warn('AdMob banner error:', err)
-        }
-      />
+      <View style={{
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    alignItems: 'center',
+    // on narrow screens FULL_BANNER is 468×60; on phones it'll auto-scale
+    paddingBottom: 8,
+  }}>
+              <BannerAd
+                unitId={TestIds.BANNER}
+                size={BannerAdSize.FULL_BANNER}
+                requestOptions={{
+                  requestNonPersonalizedAdsOnly: true,
+                }}
+                onAdFailedToLoad={(error) => {
+                  console.error('Ad failed to load:', error);
+                }}
+              />
+            </View>
     </View>
   );
 }
