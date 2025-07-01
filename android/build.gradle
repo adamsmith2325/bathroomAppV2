@@ -6,10 +6,20 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath('com.android.tools.build:gradle')
-    classpath('com.facebook.react:react-native-gradle-plugin')
-    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    // Make sure you pin a concrete Gradle plugin version here:
+    classpath("com.android.tools.build:gradle:8.0.2")
+    classpath("com.facebook.react:react-native-gradle-plugin")
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
   }
+}
+
+// ─── Project-level SDK versions for all modules / Expo libraries ───
+ext {
+  compileSdkVersion  = 35
+  targetSdkVersion   = 35
+  buildToolsVersion  = "35.0.0"
+  minSdkVersion      = 24
+  kotlinVersion      = "2.0.21"
 }
 
 def reactNativeAndroidDir = new File(
@@ -26,7 +36,6 @@ allprojects {
       // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
       url(reactNativeAndroidDir)
     }
-
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
