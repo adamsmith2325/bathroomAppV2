@@ -1,5 +1,4 @@
 <resources>
   <string name="app_name">bathroomAppV2</string>
   <string name="expo_system_ui_user_interface_style" translatable="false">automatic</string>
-  <string name="google_maps_api_key">AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM</string>
 </resources>
