@@ -1,4 +1,5 @@
 // import { AdMobBanner } from 'expo-ads-admob';
+import { AdMobBanner, setTestDeviceIDAsync } from 'expo-ads-admob';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -47,6 +48,11 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [usageCount, setUsageCount] = useState<number>(0);
 
+    // Register emulator as a test device and load markers
+  useEffect(() => {
+    setTestDeviceIDAsync('TESTMOTOG');
+  }, []);
+  
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -272,6 +278,14 @@ export default function MapScreen() {
           )} 
         </View>
       </Modal>
+      <AdMobBanner
+        bannerSize="fullBanner"
+        adUnitID="ca-app-pub-5901242452853695/4501154615" // Expo test ID
+        servePersonalizedAds // set to false if you want non-personalized
+        onDidFailToReceiveAdWithError={(err) =>
+          console.warn('AdMob banner error:', err)
+        }
+      />
     </View>
   );
 }
