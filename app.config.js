@@ -21,6 +21,9 @@ export default {
     ios: {
       bundleIdentifier: 'com.prismixlabs.bathroomappv2',  // ← RECOMMENDED: match your Android package
       supportsTablet: true,
+      infoPlist: {
+      "ITSAppUsesNonExemptEncryption": false
+      },
     },
     newArchEnabled: true,
     experiments: {
@@ -30,6 +33,19 @@ export default {
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       APP_SCHEME: 'bathroomappv2',
+      eas: {
+        projectId: "481da270-bcf7-4904-8a63-7221c7b46f29",
+      }
     },
+        "plugins": [
+      [
+        "expo-ads-admob",
+        {
+          // replace with your actual AdMob App ID from Firebase / AdMob console:
+          "appIdAndroid": "ca-app-pub-5901242452853695~2399952491",
+          "appIdIOS":     "ca-app-pub-5901242452853695~2944530360"
+        }
+      ]
+    ]
   },
 };

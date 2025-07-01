@@ -1,56 +1,100 @@
 // App.tsx
-import {
-  DefaultTheme as NavDefaultTheme,
-  NavigationContainer,
-} from '@react-navigation/native'
-import React from 'react'
-
-// your two context providers:
-import { ThemeProvider, useTheme } from './src/lib/themeContext'
+import { NavigationContainer } from '@react-navigation/native'
+import * as Location from 'expo-location'
+import * as Notifications from 'expo-notifications'
+import React, { useEffect } from 'react'
+import { Platform } from 'react-native'
+import { GEOFENCE_TASK } from './src/background/geofenceTask'
+import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
-
-import { darkTheme } from './src/design/theme'; // to detect dark/light
 import BottomTabNavigator from './src/navigation/BottomTabNavigator'
 import { AuthScreen } from './src/screens/AuthScreen'
+import { supabase } from './supabase'
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <SessionProvider>
-        <AppInner />
-      </SessionProvider>
-    </ThemeProvider>
-  )
-}
 
-function AppInner() {
-  // 1) pull session from your hook with all your signIn/signOut etc
+Notifications.setNotificationHandler({
+  handleNotification: async (notification) => {
+    return {
+      shouldShowAlert: true,    // show the alert popup
+      shouldPlaySound: false,   // no sound
+      shouldSetBadge: false,    // no badge count
+      shouldShowBanner: true,   // iOS 14+ banner
+      shouldShowList: true,     // show in notification center on Android
+    }
+  },
+})
+
+function Root() {
   const { session } = useSession()
 
-  // 2) pull the full design theme object
-  const { theme } = useTheme()
-
-  // 3) figure out whether we're in dark mode
-  const isDark = theme === darkTheme
-
-  // 4) map your theme.tokens → React-Navigation theme
-  const navTheme = {
-    ...NavDefaultTheme,
-    dark: isDark,
-    colors: {
-      ...NavDefaultTheme.colors,
-      background: theme.colors.background,
-      card:       theme.colors.surface,
-      text:       theme.colors.text,
-      primary:    theme.colors.primary,
-      border:     theme.colors.border,
-      notification: theme.colors.accent,
-    },
-  }
+  // register a listener so tapping the notif navigates
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(resp => {
+      const bathroomId = resp.notification.request.content.data.bathroomId
+      // you’ll need to get a navigation ref here to navigate
+      // to your BathroomDetail screen, e.g.
+      // navigationRef.current?.navigate('BathroomDetail', { id: bathroomId })
+    })
+    return () => sub.remove()
+  }, [])
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer>
       {session ? <BottomTabNavigator /> : <AuthScreen />}
     </NavigationContainer>
   )
+}
+
+export default function App() {
+  return (
+    <SessionProvider>
+      <ThemeProvider>
+        <GeofenceRegistrar />
+        <Root />
+      </ThemeProvider>
+    </SessionProvider>
+  )
+}
+
+/** component that requests permission + starts geofencing */
+function GeofenceRegistrar() {
+  useEffect(() => {
+    ;(async () => {
+      // 1) permissions
+      const { status: fg } = await Location.requestForegroundPermissionsAsync()
+      const { status: bg } =
+        Platform.OS === 'android'
+          ? await Location.requestBackgroundPermissionsAsync()
+          : { status: 'granted' }
+      if (fg !== 'granted' || bg !== 'granted') return
+
+      // 2) load radius
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('alert_radius')
+        .single()
+      const radiusFeet = profile?.alert_radius ?? 0
+
+      // if user turned alerts OFF, stop any running geofences & exit
+      if (radiusFeet <= 0) {
+        await Location.stopGeofencingAsync(GEOFENCE_TASK)
+        return
+      }
+
+      // 3) else load bathrooms & register
+      const { data: baths } = await supabase
+        .from('bathrooms')
+        .select('id, latitude, longitude')
+      const regions = baths!.map((b) => ({
+        identifier: b.id.toString(),
+        latitude: b.latitude,
+        longitude: b.longitude,
+        radius: radiusFeet * 0.3048, // convert ft → meters
+      }))
+
+      await Location.startGeofencingAsync(GEOFENCE_TASK, regions)
+    })()
+  }, [])
+
+  return null
 }
