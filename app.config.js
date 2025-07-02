@@ -39,6 +39,7 @@ export default {
     },
     plugins: [
       [
+        'expo-dev-client',
         'react-native-google-mobile-ads',
         {
           // Your AdMob App IDs from the AdMob console:
