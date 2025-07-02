@@ -35,3 +35,18 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+subprojects { subproject ->
+  // afterEvaluate so that the Android library plugin is applied first
+  subproject.afterEvaluate {
+    def isAndroidLib = subproject.plugins.hasPlugin("com.android.library")
+    def isRNModule  = subproject.name.startsWith("react-native-")
+    if (isAndroidLib && isRNModule) {
+      subproject.extensions
+        .getByType(com.android.build.gradle.LibraryExtension)
+        .publishing {
+          singleVariant("release")
+        }
+    }
+  }
+}
