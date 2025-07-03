@@ -24,7 +24,12 @@ export default {
     ios: {
       bundleIdentifier: 'com.prismixlabs.bathroomappv2',
       supportsTablet: true,
-      infoPlist: {
+        infoPlist: {
+        NSLocationWhenInUseUsageDescription: "We need your location to show nearby restrooms.",
+        NSLocationAlwaysAndWhenInUseUsageDescription: "We need your location in the background to keep your map updated.",
+        SCameraUsageDescription: "Allow access to your camera to take photos of bathroom facilities.",
+        NSPhotoLibraryUsageDescription: "Allow access to your photo library so you can upload bathroom images.",
+        GMSApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM",
         ITSAppUsesNonExemptEncryption: false,
       },
       config: {
