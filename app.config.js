@@ -17,6 +17,9 @@ export default {
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      config: {
+        googleMapsApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM"
+      }
     },
     ios: {
       bundleIdentifier: 'com.prismixlabs.bathroomappv2',
@@ -24,6 +27,9 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
+      config: {
+        googleMapsApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM"
+      }
     },
     newArchEnabled: true,
     experiments: {
@@ -38,15 +44,24 @@ export default {
       },
     },
     plugins: [
+      // [
+      //   'react-native-google-mobile-ads',
+      //   {
+      //     // Your AdMob App IDs from the AdMob console:
+      //     android_app_id: 'ca-app-pub-5901242452853695~2399952491',
+      //     ios_app_id: 'ca-app-pub-5901242452853695~2944530360',
+      //   },
+
+      // ],
       [
-        // 'expo-dev-client',
-        'react-native-google-mobile-ads',
+      "@sentry/react-native/expo",
         {
-          // Your AdMob App IDs from the AdMob console:
-          android_app_id: 'ca-app-pub-5901242452853695~2399952491',
-          ios_app_id: 'ca-app-pub-5901242452853695~2944530360',
-        },
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "prismix-labs"
+        }
       ],
+      'expo-dev-client'
     ],
   },
 };

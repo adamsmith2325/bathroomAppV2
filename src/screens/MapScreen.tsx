@@ -12,11 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  BannerAd,
-  BannerAdSize,
-  TestIds,
-} from 'react-native-google-mobile-ads';
+// import {
+//   BannerAd,
+//   BannerAdSize,
+//   TestIds,
+// } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 
 import { supabase } from '../../supabase/index';
@@ -276,7 +276,7 @@ export default function MapScreen() {
           )} 
         </View>
       </Modal>
-      <View style={{
+      {/* <View style={{
     position: 'absolute',
     bottom: 0,
     width: '100%',
@@ -294,7 +294,7 @@ export default function MapScreen() {
                   console.error('Ad failed to load:', error);
                 }}
               />
-            </View>
+            </View> */}
     </View>
   );
 }

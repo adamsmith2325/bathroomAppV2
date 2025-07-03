@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import * as Location from 'expo-location'
 import * as Notifications from 'expo-notifications'
 import React, { useEffect } from 'react'
-import { Platform } from 'react-native'
+import { LogBox, Platform } from 'react-native'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
@@ -11,6 +11,29 @@ import BottomTabNavigator from './src/navigation/BottomTabNavigator'
 import { AuthScreen } from './src/screens/AuthScreen'
 import { supabase } from './supabase'
 
+import * as Sentry from '@sentry/react-native'
+
+
+
+Sentry.init({
+  dsn: 'https://10c0e6ed16a7f81729cf942aa156b4b9@o4509606265618432.ingest.us.sentry.io/4509606267781120',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
+
+
+// silences irrelevant RN warnings in your dashboard
+LogBox.ignoreLogs(['Setting a timer']);
 
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
@@ -26,7 +49,7 @@ Notifications.setNotificationHandler({
 
 function Root() {
   const { session } = useSession()
-
+  
   // register a listener so tapping the notif navigates
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(resp => {
@@ -45,7 +68,7 @@ function Root() {
   )
 }
 
-export default function App() {
+export default Sentry.wrap(function App() {
   return (
     <SessionProvider>
       <ThemeProvider>
@@ -54,7 +77,7 @@ export default function App() {
       </ThemeProvider>
     </SessionProvider>
   )
-}
+});
 
 /** component that requests permission + starts geofencing */
 function GeofenceRegistrar() {
