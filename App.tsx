@@ -31,8 +31,6 @@ Sentry.init({
   // spotlight: __DEV__,
 });
 
-Sentry.nativeCrash;
-
 // silences irrelevant RN warnings in your dashboard
 LogBox.ignoreLogs(['Setting a timer']);
 

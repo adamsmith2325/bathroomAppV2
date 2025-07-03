@@ -44,7 +44,6 @@ export default {
       },
     },
     plugins: [
-      // [
       //   'react-native-google-mobile-ads',
       //   {
       //     // Your AdMob App IDs from the AdMob console:
@@ -52,7 +51,6 @@ export default {
       //     ios_app_id: 'ca-app-pub-5901242452853695~2944530360',
       //   },
 
-      // ],
       [
       "@sentry/react-native/expo",
         {
