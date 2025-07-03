@@ -10,7 +10,12 @@
     },
     "preview": {
       "distribution": "internal",
-      "buildType":"apk"
+      "env": {
+        "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG": "prismix-labs",
+        "SENTRY_PROJECT": "bathroom-finder"
+      }
+
     },
     "production": {
       "autoIncrement": true

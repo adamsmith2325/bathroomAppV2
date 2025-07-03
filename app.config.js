@@ -18,7 +18,7 @@ export default {
       },
       edgeToEdgeEnabled: true,
       config: {
-        googleMapsApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM"
+        "googleMaps": { "apiKey": "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM" }
       }
     },
     ios: {
@@ -28,7 +28,7 @@ export default {
         ITSAppUsesNonExemptEncryption: false,
       },
       config: {
-        googleMapsApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM"
+        "googleMaps": { "apiKey": "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM" }
       }
     },
     newArchEnabled: true,
@@ -57,9 +57,10 @@ export default {
           "url": "https://sentry.io/",
           "project": "react-native",
           "organization": "prismix-labs"
-        }
+        },
       ],
       'expo-dev-client'
+      
     ],
   },
 };
