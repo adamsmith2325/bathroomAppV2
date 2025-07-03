@@ -35,15 +35,3 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
-
-  pluginManager.withPlugin("com.android.library") {
-    // …then only for projects named react-native-*
-    if (project.name.startsWith("react-native-")) {
-      project.extensions
-        .getByType(com.android.build.gradle.LibraryExtension)
-        .publishing {
-          singleVariant("release")
-        }
-    }
-  }
-
