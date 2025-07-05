@@ -1,11 +1,12 @@
 // src/navigation/BottomTabNavigator.tsx
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import MapScreen from '../screens/MapScreen';
-import AddBathroomScreen from '../screens/AddBathroomScreen';
-import MyAccountScreen from '../screens/MyAccountScreen';
 import { Ionicons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
 import { useTheme } from '../lib/themeContext';
+import AddBathroomScreen from '../screens/AddBathroomScreen';
+import { FavoritesScreen } from '../screens/FavoritesScreen';
+import MapScreen from '../screens/MapScreen';
+import { MyAccountScreen } from '../screens/MyAccountScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -35,7 +36,9 @@ export function MainTabs() {
     >
       <Tab.Screen name="Map" component={MapScreen} />
       <Tab.Screen name="Add" component={AddBathroomScreen} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} />
       <Tab.Screen name="Account" component={MyAccountScreen} />
+
     </Tab.Navigator>
   );
 }
