@@ -1,158 +1,194 @@
-import * as Linking from 'expo-linking';
-import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+// import {
+//   BannerAd,
+//   BannerAdSize,
+//   TestIds,
+// } from 'react-native-google-mobile-ads';
+// src/screens/MapScreen.tsx
+// src/screens/MapScreen.tsx
+// src/screens/MapScreen.tsx
+import * as Linking from 'expo-linking'
+import * as Location from 'expo-location'
+import React, { useEffect, useState } from 'react'
 import {
   Alert,
   Button,
   FlatList,
   Modal,
   Platform,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-// import {
-//   BannerAd,
-//   BannerAdSize,
-//   TestIds,
-// } from 'react-native-google-mobile-ads';
-import MapView, { Marker } from 'react-native-maps';
+} from 'react-native'
+import MapView, { Marker } from 'react-native-maps'
 
-import { supabase } from '../../supabase/index';
-import { useTheme } from '../lib/themeContext';
-import { useSession } from '../lib/useSession';
+import { ThemedText, ThemedView } from '../components/Themed'
+import { supabase } from '../lib/supabase'
+import { useTheme } from '../lib/themeContext'
+import { useSession } from '../lib/useSession'
+import styles from './MapScreen.styles'
 
 interface Bathroom {
-  id: string;
-  title: string;
-  entry_code?: string;
-  instructions?: string;
-  lat: number;
-  lng: number;
+  id: string
+  title: string
+  entry_code?: string
+  instructions?: string
+  lat: number
+  lng: number
 }
 
 interface Comment {
-  id: string;
-  text: string;
-  user_id: string;
-  created_at: string;
+  id: string
+  text: string
+  user_id: string
+  created_at: string
 }
 
 export default function MapScreen() {
-  const { theme } = useTheme();
-  const { user, isPremium } = useSession();
+  const { theme } = useTheme()
+  const { user, isPremium } = useSession()
+  const { colors, spacing, borderRadius, typography } = theme
 
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [bathrooms, setBathrooms] = useState<Bathroom[]>([]);
-  const [selectedBathroom, setSelectedBathroom] = useState<Bathroom | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [usageCount, setUsageCount] = useState<number>(0);
-  
+  // Prepare dynamic text styles
+  const headerStyle = styles.headerText(
+    typography.header.fontSize,
+    typography.header.fontWeight as any,
+    colors.text
+  )
+  const bodyStyle = styles.subText(
+    typography.body.fontSize,
+    typography.body.fontWeight as any,
+    colors.text
+  )
+  const secondaryStyle = styles.subText(
+    typography.body.fontSize,
+    typography.body.fontWeight as any,
+    colors.textSecondary,
+    spacing.sm
+  )
+  const commentStyle = styles.commentText(
+    typography.body.fontSize,
+    typography.body.fontWeight as any,
+    colors.textSecondary
+  )
+  const inputStyle = styles.commentInput(colors.border, colors.text)
+  const closeStyle = styles.closeText(
+    typography.body.fontSize,
+    typography.body.fontWeight as any,
+    colors.error
+  )
+
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [bathrooms, setBathrooms] = useState<Bathroom[]>([])
+  const [selectedBathroom, setSelectedBathroom] = useState<Bathroom | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [modalVisible, setModalVisible] = useState(false)
+  const [usageCount, setUsageCount] = useState(0)
+
+  // Get user location
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+    ;(async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
-        Alert.alert('Permission denied', 'We need location access.');
-        return;
+        Alert.alert('Permission denied', 'We need location access.')
+        return
       }
-
-      const loc = await Location.getCurrentPositionAsync({});
+      const loc = await Location.getCurrentPositionAsync({})
       setLocation({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
-      });
-    })();
-  }, []);
+      })
+    })()
+  }, [])
 
+  // Load bathrooms
   useEffect(() => {
-    const fetchBathrooms = async () => {
-      const { data, error } = await supabase.from('bathrooms').select('*');
-      if (!error && data) setBathrooms(data);
-    };
-    fetchBathrooms();
-  }, []);
+    ;(async () => {
+      const { data, error } = await supabase.from('bathrooms').select('*')
+      if (!error && data) {
+        setBathrooms(data as Bathroom[])
+      }
+    })()
+  }, [])
 
-  const fetchComments = async (bathroomId: string) => {
+  // Comments & usage fetchers
+  const fetchComments = async (id: string) => {
     const { data, error } = await supabase
       .from('comments')
       .select('*')
-      .eq('bathroom_id', bathroomId)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) setComments(data);
-  };
-
-  const fetchUsageCount = async (bathroomId: string) => {
+      .eq('bathroom_id', id)
+      .order('created_at', { ascending: false })
+    if (!error && data) {
+      setComments(data as Comment[])
+    }
+  }
+  const fetchUsageCount = async (id: string) => {
     const { count, error } = await supabase
       .from('bathroom_usage')
       .select('*', { count: 'exact', head: true })
-      .eq('bathroom_id', bathroomId);
+      .eq('bathroom_id', id)
+    if (!error && typeof count === 'number') {
+      setUsageCount(count)
+    }
+  }
 
-    if (!error && typeof count === 'number') setUsageCount(count);
-  };
-
-  const handleMarkerPress = (bathroom: Bathroom) => {
-    setSelectedBathroom(bathroom);
-    setModalVisible(true);
-    fetchComments(bathroom.id);
-    fetchUsageCount(bathroom.id);
-  };
-
+  // Handlers
+  const handleMarkerPress = (b: Bathroom) => {
+    setSelectedBathroom(b)
+    setModalVisible(true)
+    fetchComments(b.id)
+    fetchUsageCount(b.id)
+  }
   const handleCommentSubmit = async () => {
-    if (!newComment.trim() || !selectedBathroom) return;
-
+    if (!newComment.trim() || !selectedBathroom) return
     const { error } = await supabase.from('comments').insert({
       bathroom_id: selectedBathroom.id,
       user_id: user?.id,
       text: newComment.trim(),
-    });
-
+    })
     if (!error) {
-      setNewComment('');
-      fetchComments(selectedBathroom.id);
+      setNewComment('')
+      fetchComments(selectedBathroom.id)
     }
-  };
-
+  }
   const handleMarkUsed = async () => {
-    if (!selectedBathroom || !user) return;
-
+    if (!selectedBathroom || !user) return
     const { error } = await supabase.from('bathroom_usage').insert({
       bathroom_id: selectedBathroom.id,
       user_id: user.id,
-    });
-
+    })
     if (!error) {
-      fetchUsageCount(selectedBathroom.id);
-      Alert.alert('👍', 'Thanks for marking this bathroom as used!');
+      fetchUsageCount(selectedBathroom.id)
+      Alert.alert('👍', 'Thanks for marking this bathroom as used!')
     }
-  };
-
+  }
   const handleGetDirections = () => {
-    if (!selectedBathroom) return;
-    const { lat, lng } = selectedBathroom;
+    if (!selectedBathroom) return
+    const { lat, lng } = selectedBathroom
     const url = Platform.select({
       ios: `http://maps.apple.com/?daddr=${lat},${lng}`,
       android: `google.navigation:q=${lat},${lng}`,
-    });
-
+    })
     if (url) {
-      Linking.openURL(url).catch(() =>
-        Alert.alert('Error', 'Unable to open directions.')
-      );
+      Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open directions.'))
     }
-  };
+  }
 
+  // Loading
   if (!location) {
-    return <Text style={{ flex: 1, textAlign: 'center', marginTop: 100 }}>Getting location…</Text>;
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText style={[styles.loadingText, secondaryStyle]}>
+          Getting location…
+        </ThemedText>
+      </ThemedView>
+    )
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <ThemedView style={styles.container}>
       <MapView
-        style={{ flex: 1 }}
+        style={styles.map}
         initialRegion={{
           latitude: location.latitude,
           longitude: location.longitude,
@@ -165,117 +201,94 @@ export default function MapScreen() {
             key={b.id}
             coordinate={{ latitude: b.lat, longitude: b.lng }}
             title={b.title}
+            pinColor={colors.accent}
             onPress={() => handleMarkerPress(b)}
           />
         ))}
-        <Marker coordinate={location} title="You are here" pinColor="blue" />
+        <Marker coordinate={location} title="You are here" pinColor={colors.primary} />
       </MapView>
 
-      <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 20 }}>
-          {selectedBathroom && (
-            <>
-              <View style={{
-                backgroundColor: theme.colors.surface,
-                borderRadius: theme.borderRadius.md,
-                padding: theme.spacing.md,
-                shadowColor: '#000',
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                marginBottom: 20,
-              }}>
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.text }}>
-                  🚻 {selectedBathroom.title}
-                </Text>
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <ThemedView style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+          <ThemedView style={[styles.modalContainer(spacing.md), { backgroundColor: colors.background }]}>
+            {selectedBathroom && (
+              <>
+                <ThemedView style={[styles.card(borderRadius.md, spacing.md), { backgroundColor: colors.surface }]}>
+                  <ThemedText style={headerStyle}>
+                    🚻 {selectedBathroom.title}
+                  </ThemedText>
 
-                {selectedBathroom.entry_code && (
-                  <Text style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
-                    🔐 Code: {selectedBathroom.entry_code}
-                  </Text>
-                )}
+                  {selectedBathroom.entry_code && (
+                    <ThemedText style={secondaryStyle}>
+                      🔐 Code: {selectedBathroom.entry_code}
+                    </ThemedText>
+                  )}
 
-                {selectedBathroom.instructions && (
-                  <Text style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
-                    📝 Instructions: {selectedBathroom.instructions}
-                  </Text>
-                )}
+                  {selectedBathroom.instructions && (
+                    <ThemedText style={secondaryStyle}>
+                      📝 Instructions: {selectedBathroom.instructions}
+                    </ThemedText>
+                  )}
 
-                <Text style={{ marginTop: 12, fontSize: 16, color: theme.colors.primary }}>
-                  🚶 Used {usageCount} {usageCount === 1 ? 'time' : 'times'}
-                </Text>
+                  <ThemedText style={bodyStyle}>
+                    🚶 Used {usageCount} {usageCount === 1 ? 'time' : 'times'}
+                  </ThemedText>
 
-                <View style={{ marginTop: 12 }}>
-                  <Button title="👍 Mark as Used" onPress={handleMarkUsed} />
-                </View>
+                  <View style={styles.buttonSpacing}>
+                    <Button title="👍 Mark as Used" color={colors.primary} onPress={handleMarkUsed} />
+                  </View>
+                  <View style={styles.buttonSpacing}>
+                    <Button title="🧭 Get Directions" color={colors.accent} onPress={handleGetDirections} />
+                  </View>
+                </ThemedView>
 
-                <View style={{ marginTop: 12 }}>
-                  <Button title="🧭 Get Directions" onPress={handleGetDirections} />
-                </View>
-              </View>
+                <ThemedText style={[bodyStyle, { fontWeight: typography.body.fontWeight as any }]}>
+                  💬 Comments
+                </ThemedText>
 
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.colors.text, marginBottom: 6 }}>
-                💬 Comments
-              </Text>
+                <FlatList
+                  data={comments}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <ThemedText style={commentStyle}>• {item.text}</ThemedText>
+                  )}
+                  ListEmptyComponent={<ThemedText style={commentStyle}>No comments yet.</ThemedText>}
+                  contentContainerStyle={styles.commentListContainer}
+                />
 
-              <FlatList
-                data={comments}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <Text style={{ color: theme.colors.textSecondary, marginVertical: 4 }}>
-                    • {item.text}
-                  </Text>
-                )}
-                ListEmptyComponent={<Text style={{ color: theme.colors.textSecondary }}>No comments yet.</Text>}
-                style={{ maxHeight: 200, marginBottom: 16 }}
-              />
+                <TextInput
+                  placeholder="Add a comment..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  style={inputStyle}
+                />
+                <Button title="Submit Comment" color={colors.primary} onPress={handleCommentSubmit} />
 
-              <TextInput
-                placeholder="Add a comment..."
-                value={newComment}
-                onChangeText={setNewComment}
-                placeholderTextColor={theme.colors.textSecondary}
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-              />
-              <Button title="Submit Comment" onPress={handleCommentSubmit} />
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 20 }}>
-                <Text style={{
-                  textAlign: 'center',
-                  color: theme.colors.error,
-                  fontWeight: 'bold',
-                  fontSize: 16,
-                }}>
-                  Close
-                </Text>
-              </TouchableOpacity>
-              
-              {/* ✅ Show ad only for free users */}
-              {!isPremium && (
-                <View style={{ marginTop: 24 }}>
-                 {/* <AdMobBanner
-                    bannerSize="smartBannerPortrait"
-                    adUnitID={
-                      Platform.OS === 'ios'
-                        ? 'ca-app-pub-5901242452853695/3188072947' // ← replace with your real iOS ID
-                        : 'ca-app-pub-5901242452853695/4501154615' // ← replace with your real Android ID
-                    }
-                    servePersonalizedAds
-                    onDidFailToReceiveAdWithError={(err) =>
-                      console.log('Ad error', err)
-                    }
-                  /> */}
-                </View>
-              )}
-            </>
-          )} 
-        </View>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <ThemedText style={closeStyle}>Close</ThemedText>
+                </TouchableOpacity>
+
+                {!isPremium && <View style={{ marginTop: spacing.lg }} />}
+              </>
+            )}
+          </ThemedView>
+        </ThemedView>
       </Modal>
+    </ThemedView>
+  )
+}
+
+
+
+
+
+
       {/* <View style={{
     position: 'absolute',
     bottom: 0,
@@ -295,6 +308,3 @@ export default function MapScreen() {
                 }}
               />
             </View> */}
-    </View>
-  );
-}

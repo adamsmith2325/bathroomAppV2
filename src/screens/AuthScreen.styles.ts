@@ -34,7 +34,7 @@ export const styles: {
     flexDirection: 'row',
     justifyContent: 'space-between', // push them to the edges
     width: '100%',                    // take full width
-    paddingHorizontal: 65,            // optional: add some side padding
+    paddingHorizontal: 50,            // optional: add some side padding
     marginTop: 16,                    // optional: space from inputs
   } as ViewStyle,
 }

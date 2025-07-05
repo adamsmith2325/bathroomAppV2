@@ -1,141 +1,153 @@
 // src/screens/AddBathroomScreen.tsx
-import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
-import { Alert, Button, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import MapView, { MapPressEvent, Marker } from 'react-native-maps';
-import { supabase } from '../../supabase/index';
-import { useTheme } from '../lib/themeContext';
-import { useSession } from '../lib/useSession';
+import React, { useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  TextInput,
+} from 'react-native'
+import MapView, { LatLng, Marker } from 'react-native-maps'
+import { ThemedText, ThemedView } from '../components/Themed'
+import { supabase } from '../lib/supabase'
+import { useTheme } from '../lib/themeContext'
+import styles from './AddBathroomScreen.styles'
 
-export default function AddBathroomScreen() {
-  const { theme } = useTheme();
-  const { user } = useSession();
+export function AddBathroomScreen() {
+  const { theme } = useTheme()
+  const { colors, spacing } = theme
 
-  const [markerCoords, setMarkerCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [title, setTitle] = useState('');
-  const [entryCode, setEntryCode] = useState('');
-  const [instructions, setInstructions] = useState('');
+  const [marker, setMarker] = useState<LatLng>({
+    latitude: 37.78825,
+    longitude: -122.4324,
+  })
+  const [title, setTitle] = useState('')
+  const [entryCode, setEntryCode] = useState('')
+  const [instructions, setInstructions] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required.');
-        return;
-      }
+  // user taps map
+  const onMapPress = (e: any) => {
+    setMarker(e.nativeEvent.coordinate)
+  }
 
-      const location = await Location.getCurrentPositionAsync({});
-      setMarkerCoords({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-    })();
-  }, []);
+  // drag end
+  const onDragEnd = (e: any) => {
+    setMarker(e.nativeEvent.coordinate)
+  }
 
-  const handleSubmit = async () => {
-    if (!markerCoords || !title.trim()) {
-      Alert.alert('Missing Info', 'Please drop a pin and enter a title.');
-      return;
+  const submit = async () => {
+    if (!title.trim()) {
+      return Alert.alert('Validation', 'Please enter a title for the bathroom.')
     }
+    setSubmitting(true)
 
-    const { error } = await supabase.from('bathrooms').insert({
-      user_id: user?.id,
-      title,
-      entry_code: entryCode || null,
-      instructions: instructions || null,
-      lat: markerCoords.latitude,
-      lng: markerCoords.longitude,
-    });
+    const { error } = await supabase
+      .from('bathrooms')
+      .insert({
+        title: title.trim(),
+        entry_code: entryCode.trim() || null,
+        instructions: instructions.trim() || null,
+        lat: marker.latitude,
+        lng: marker.longitude,
+      })
 
+    setSubmitting(false)
     if (error) {
-      Alert.alert('Error', error.message);
+      console.error(error)
+      Alert.alert('Error', 'Failed to add bathroom.')
     } else {
-      Alert.alert('Success', 'Bathroom added!');
-      setTitle('');
-      setEntryCode('');
-      setInstructions('');
+      Alert.alert('Success', 'Bathroom added!')
+      setTitle('')
+      setEntryCode('')
+      setInstructions('')
     }
-  };
+  }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        {markerCoords && (
-          <MapView
-            style={{ flex: 1 }}
-            initialRegion={{
-              ...markerCoords,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            onPress={(e: MapPressEvent) => {
-              const { latitude, longitude } = e.nativeEvent.coordinate;
-              setMarkerCoords({ latitude, longitude });
-            }}
-          >
-            <Marker
-              draggable
-              coordinate={markerCoords}
-              onDragEnd={(e) => {
-                const { latitude, longitude } = e.nativeEvent.coordinate;
-                setMarkerCoords({ latitude, longitude });
-              }}
-            />
-          </MapView>
-        )}
+    <ThemedView style={styles.container}>
+      <MapView
+        style={styles.mapContainer}
+        initialRegion={{
+          ...marker,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+        onPress={onMapPress}
+      >
+        <Marker
+          coordinate={marker}
+          draggable
+          onDragEnd={onDragEnd}
+          pinColor={colors.primary}
+        />
+      </MapView>
 
-        <View style={{ padding: 16 }}>
-          <TextInput
-            placeholder="Bathroom Title"
-            value={title}
-            onChangeText={setTitle}
-            placeholderTextColor={theme.colors.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              color: theme.colors.text,
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 12,
-            }}
-          />
+      <ThemedView style={styles.form}>
+        <ThemedText style={{ marginBottom: spacing.sm, fontWeight: '600' }}>
+          New Bathroom Location
+        </ThemedText>
 
-          <TextInput
-            placeholder="Entry Code (optional)"
-            value={entryCode}
-            onChangeText={setEntryCode}
-            placeholderTextColor={theme.colors.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              color: theme.colors.text,
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 12,
-            }}
-          />
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          placeholder="Title"
+          placeholderTextColor={colors.textSecondary}
+          value={title}
+          onChangeText={setTitle}
+        />
 
-          <TextInput
-            placeholder="Entry Instructions"
-            value={instructions}
-            onChangeText={setInstructions}
-            multiline
-            placeholderTextColor={theme.colors.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              color: theme.colors.text,
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          placeholder="Entry Code (optional)"
+          placeholderTextColor={colors.textSecondary}
+          value={entryCode}
+          onChangeText={setEntryCode}
+        />
+
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text,
               height: 80,
               textAlignVertical: 'top',
-            }}
-          />
+            },
+          ]}
+          placeholder="Instructions (optional)"
+          placeholderTextColor={colors.textSecondary}
+          value={instructions}
+          onChangeText={setInstructions}
+          multiline
+        />
 
-          <Button title="Submit Bathroom" onPress={handleSubmit} />
-        </View>
-      </View>
-    </KeyboardAvoidingView>
-  );
+        {submitting ? (
+          <ActivityIndicator
+            style={styles.buttonContainer}
+            color={colors.primary}
+          />
+        ) : (
+          <Button
+            title="Add Bathroom"
+            color={colors.primary}
+            onPress={submit}
+          />
+        )}
+      </ThemedView>
+    </ThemedView>
+  )
 }

@@ -1,17 +1,34 @@
-import { StyleSheet } from 'react-native';
+// src/screens/AddBathroomScreen.styles.ts
+import { StyleSheet, TextStyle, ViewStyle } from 'react-native'
 
-export const styles = StyleSheet.create({
-  modal: {
+export interface Styles {
+  container: ViewStyle
+  mapContainer: ViewStyle
+  form: ViewStyle
+  input: TextStyle
+  buttonContainer: ViewStyle
+}
+
+export default StyleSheet.create<Styles>({
+  container: {
     flex: 1,
-    backgroundColor: '#1A1C20',
-    padding: 24,
-    justifyContent: 'center'
+  },
+  mapContainer: {
+    flex: 1,
+  },
+  form: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: 'transparent', // ThemedView parent will apply correct bg
   },
   input: {
-    backgroundColor: '#0E0E11',
-    color: '#FFFFFF',
-    padding: 16,
-    borderRadius: 6,
-    marginBottom: 16
-  }
-});
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+  },
+  buttonContainer: {
+    marginTop: 8,
+  },
+})
