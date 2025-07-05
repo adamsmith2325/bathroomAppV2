@@ -7,7 +7,7 @@ import { LogBox, Platform } from 'react-native'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
-import BottomTabNavigator from './src/navigation/BottomTabNavigator'
+import { MainTabs } from './src/navigation/BottomTabNavigator'
 import { AuthScreen } from './src/screens/AuthScreen'
 import { supabase } from './supabase'
 
@@ -62,7 +62,7 @@ function Root() {
 
   return (
     <NavigationContainer>
-      {session ? <BottomTabNavigator /> : <AuthScreen />}
+      {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
   )
 }
