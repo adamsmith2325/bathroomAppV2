@@ -4,6 +4,7 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 export type RootTabParamList = {
   Map: undefined;
   Add: undefined;
+  Favorites: undefined;
   Account: undefined;
 };
 

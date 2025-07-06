@@ -4,8 +4,7 @@
 //   TestIds,
 // } from 'react-native-google-mobile-ads';
 // src/screens/MapScreen.tsx
-// src/screens/MapScreen.tsx
-// src/screens/MapScreen.tsx
+import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
 import * as Location from 'expo-location'
 import React, { useEffect, useState } from 'react'
@@ -20,7 +19,6 @@ import {
   View,
 } from 'react-native'
 import MapView, { Marker } from 'react-native-maps'
-
 import { ThemedText, ThemedView } from '../components/Themed'
 import { supabase } from '../lib/supabase'
 import { useTheme } from '../lib/themeContext'
@@ -85,6 +83,9 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState(false)
   const [usageCount, setUsageCount] = useState(0)
 
+  // Favorites state
+  const [isFav, setIsFav] = useState(false)
+
   // Get user location
   useEffect(() => {
     ;(async () => {
@@ -132,6 +133,20 @@ export default function MapScreen() {
     }
   }
 
+  // Check favorite status whenever modal opens
+  useEffect(() => {
+    if (!user || !selectedBathroom) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('bathroom_id', selectedBathroom.id)
+        .single()
+      setIsFav(!!data)
+    })()
+  }, [user, selectedBathroom])
+
   // Handlers
   const handleMarkerPress = (b: Bathroom) => {
     setSelectedBathroom(b)
@@ -171,6 +186,24 @@ export default function MapScreen() {
     })
     if (url) {
       Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open directions.'))
+    }
+  }
+
+  // Toggle favorite
+  const toggleFavorite = async () => {
+    if (!user || !selectedBathroom) return
+    if (isFav) {
+      await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('bathroom_id', selectedBathroom.id)
+      setIsFav(false)
+    } else {
+      await supabase
+        .from('favorites')
+        .insert({ user_id: user.id, bathroom_id: selectedBathroom.id })
+      setIsFav(true)
     }
   }
 
@@ -214,11 +247,17 @@ export default function MapScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <ThemedView style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
-          <ThemedView style={[styles.modalContainer(spacing.md), { backgroundColor: colors.background }]}>
+        <ThemedView
+          style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+        >
+          <ThemedView
+            style={[styles.modalContainer(spacing.md), { backgroundColor: colors.background }]}
+          >
             {selectedBathroom && (
               <>
-                <ThemedView style={[styles.card(borderRadius.md, spacing.md), { backgroundColor: colors.surface }]}>
+                <ThemedView
+                  style={[styles.card(borderRadius.md, spacing.md), { backgroundColor: colors.surface }]}
+                >
                   <ThemedText style={headerStyle}>
                     🚻 {selectedBathroom.title}
                   </ThemedText>
@@ -244,6 +283,23 @@ export default function MapScreen() {
                   </View>
                   <View style={styles.buttonSpacing}>
                     <Button title="🧭 Get Directions" color={colors.accent} onPress={handleGetDirections} />
+                  </View>
+
+                  {/* Favorites toggle */}
+                  <View style={styles.buttonSpacing}>
+                    <TouchableOpacity
+                      onPress={toggleFavorite}
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <Ionicons
+                        name={isFav ? 'star' : 'star-outline'}
+                        size={24}
+                        color={colors.accent}
+                      />
+                      <ThemedText style={[ bodyStyle, { marginLeft: spacing.sm } ]}>
+                        {isFav ? 'Remove from Favorites' : 'Add to Favorites'}
+                      </ThemedText>
+                    </TouchableOpacity>
                   </View>
                 </ThemedView>
 
@@ -286,25 +342,17 @@ export default function MapScreen() {
 
 
 
-
-
-
-      {/* <View style={{
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    alignItems: 'center',
-    // on narrow screens FULL_BANNER is 468×60; on phones it'll auto-scale
-    paddingBottom: 8,
-  }}>
-              <BannerAd
-                unitId={TestIds.BANNER}
-                size={BannerAdSize.FULL_BANNER}
-                requestOptions={{
-                  requestNonPersonalizedAdsOnly: true,
-                }}
-                onAdFailedToLoad={(error) => {
-                  console.error('Ad failed to load:', error);
-                }}
-              />
-            </View> */}
+//   <View style={{
+//     position: 'absolute',
+//     bottom: 0,
+//     width: '100%',
+//     alignItems: 'center',
+//     paddingBottom: 8,
+//   }}>
+//     <BannerAd
+//       unitId={TestIds.BANNER}
+//       size={BannerAdSize.FULL_BANNER}
+//       requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+//       onAdFailedToLoad={(error) => console.error('Ad failed to load:', error)}
+//     />
+//   </View>

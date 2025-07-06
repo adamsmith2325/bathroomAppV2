@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { useSession } from '../lib/useSession';
 import { AuthScreen } from '../screens/AuthScreen';
-import MainTabs from './BottomTabNavigator';
+import { MainTabs } from './BottomTabNavigator';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -20,6 +20,7 @@ const linking: LinkingOptions<RootStackParamList> = {
         screens: {
           Map: 'map',
           Add: 'add',
+          Favorites : 'favorite',
           Account: 'account',
         },
       },

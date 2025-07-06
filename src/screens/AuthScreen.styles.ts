@@ -1,40 +1,63 @@
-// src/screens/AuthScreen.styles.ts
-import type { TextStyle, ViewStyle } from 'react-native'
-import type { Theme } from '../design/theme'
+import { ImageStyle, StyleSheet, TextStyle, ViewStyle } from 'react-native'
 
-export const styles: {
-  container: (theme: Theme) => ViewStyle
-  title:     (theme: Theme) => TextStyle
-  input:     (theme: Theme) => TextStyle
-  buttonsRow: ViewStyle
-} = {
-  container: (theme) => ({
+export interface Styles {
+  container: ViewStyle
+  logo: ImageStyle
+  title: TextStyle
+  card: ViewStyle
+  input: TextStyle
+  toggleText: TextStyle
+  errorText: TextStyle
+  buttonContainer: ViewStyle
+}
+
+const styles = StyleSheet.create<Styles>({
+  container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
-  }),
-  title: (theme) => ({
-    color: theme.colors.text,
-    fontSize: theme.typography.header.fontSize,
-    fontWeight: theme.typography.header.fontWeight as TextStyle['fontWeight'],
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  }),
-  input: (theme) => ({
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.md,
+    paddingHorizontal: 24,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 24,
+    resizeMode: 'contain',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  card: {
     width: '100%',
-  }),
-  buttonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between', // push them to the edges
-    width: '100%',                    // take full width
-    paddingHorizontal: 50,            // optional: add some side padding
-    marginTop: 16,                    // optional: space from inputs
-  } as ViewStyle,
-}
+    maxWidth: 400,
+    padding: 24,
+    borderRadius: 16,
+    // shadows
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  buttonContainer: {
+    marginTop: 8,
+  },
+  toggleText: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorText: {
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+})
+
+export default styles
