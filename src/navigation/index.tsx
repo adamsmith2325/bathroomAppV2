@@ -3,7 +3,7 @@ import { LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { useSession } from '../lib/useSession';
-import { AuthScreen } from '../screens/AuthScreen';
+import AuthScreen from '../screens/AuthScreen';
 import { MainTabs } from './BottomTabNavigator';
 import type { RootStackParamList } from './types';
 
