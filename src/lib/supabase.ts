@@ -1,20 +1,12 @@
-// supabaseClient.ts
-import { createClient } from '@supabase/supabase-js';
-import Constants from 'expo-constants';
 
-// Try to pull your public vars from Expo’s config
-const expoExtras = (Constants.expoConfig?.extra ??
-  // @ts-ignore manifest.extra only exists in some SDKs
-  (Constants.manifest as any)?.extra) as
-  | { EXPO_PUBLIC_SUPABASE_URL: string; EXPO_PUBLIC_SUPABASE_ANON_KEY: string }
-  | undefined
 
-const SUPABASE_URL =
-  expoExtras?.EXPO_PUBLIC_SUPABASE_URL ??
-  process.env.EXPO_PUBLIC_SUPABASE_URL!
-const SUPABASE_ANON_KEY =
-  expoExtras?.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+// src/lib/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+import Constants from 'expo-constants'
+
+// grab your EXPO_PUBLIC_SUPABASE_URL / ANON_KEY from app.json → extra
+const { EXPO_PUBLIC_SUPABASE_URL: SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY } =
+  (Constants.expoConfig?.extra ?? {}) as Record<string, string>
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -22,3 +14,4 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     detectSessionInUrl: false,
   },
 })
+
