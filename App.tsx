@@ -8,7 +8,7 @@ import { GEOFENCE_TASK } from './src/background/geofenceTask'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
-import { AuthScreen } from './src/screens/AuthScreen'
+import AuthScreen from './src/screens/AuthScreen'
 import { supabase } from './supabase'
 
 import * as Sentry from '@sentry/react-native'
