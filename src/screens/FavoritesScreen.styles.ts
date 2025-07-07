@@ -1,22 +1,56 @@
-// src/screens/FavoritesScreen.styles.ts
-import { TextStyle, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle } from 'react-native'
 
-export interface Styles {
-  /** Container that wraps the entire screen */
-  container: (padding: number) => ViewStyle;
-  /** Style for each favorite item text */
-  itemText: (margin: number) => TextStyle;
+interface Styles {
+  container: ViewStyle
+  container2: ViewStyle
+  loading: ViewStyle
+  card: ViewStyle
+  cardLeft: ViewStyle
+  cardBody: ViewStyle
+  cardRight: ViewStyle
+  emptyContainer: ViewStyle
 }
 
-const styles: Styles = {
-  container: (spacing) => ({
+const styles = StyleSheet.create<Styles>({
+  container: {
     flex: 1,
-    padding: spacing,
-  }),
-  itemText: (margin) => ({
-    fontSize: 16,
-    marginBottom: margin,
-  }),
-};
+  },
+    container2: {
+    flex: 0,
+    padding: 20,
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    // elevation/shadow can be added inline via theme if desired
+  },
+  cardLeft: {
+    width: 32,
+    alignItems: 'center',
+  },
+  cardBody: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  cardRight: {
+    width: 32,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+})
 
-export default styles;
+export default styles

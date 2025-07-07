@@ -1,10 +1,12 @@
-// src/screens/MyAccountScreen.tsx
 import * as ImagePicker from 'expo-image-picker'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   Button,
   Image,
+  Linking,
+  Switch,
   TextInput,
   TextStyle,
   TouchableOpacity,
@@ -17,20 +19,25 @@ import { useSession } from '../lib/useSession'
 import styles from './MyAccountScreen.styles'
 
 export function MyAccountScreen() {
-  const { theme } = useTheme()
+  const { theme, mode, toggleTheme } = useTheme()
   const { colors, spacing, borderRadius, typography } = theme
-  const { user, profile, isLoading, signOut } = useSession()
+  const { user, profile, isPremium, isLoading, signOut } = useSession()
 
-  // Local edit state for name & radius
-  const [name, setName] = useState(profile?.name ?? '')
-  const [radius, setRadius] = useState(String(profile?.notifyRadius ?? 1000))
+  const [localProfile, setLocalProfile] = useState(profile)
+  const [uploading, setUploading] = useState(false)
+  const [savingName, setSavingName] = useState(false)
+  const [savingRadius, setSavingRadius] = useState(false)
+  const [processingUpgrade, setProcessingUpgrade] = useState(false)
 
-  // Avatar upload reuses the same logic you had
+  useEffect(() => {
+    setLocalProfile(profile)
+  }, [profile])
+
   const pickAvatar = async () => {
     if (!user) return
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
-      alert('Permission to access photos required.')
+      Alert.alert('Permission required', 'You need to allow photo access.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -39,77 +46,113 @@ export function MyAccountScreen() {
     })
     if (result.canceled) return
 
-    const uri = result.assets[0].uri
+    setUploading(true)
     try {
+      const uri = result.assets[0].uri
       const resp = await fetch(uri)
       const blob = await resp.blob()
-      const ext = uri.split('.').pop() || 'jpg'
+      const ext = uri.split('.').pop()!
       const filename = `${user.id}.${ext}`
 
       const { error: uploadErr } = await supabase
-        .storage.from('avatars')
+        .storage
+        .from('avatars')
         .upload(filename, blob, { upsert: true })
       if (uploadErr) throw uploadErr
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(filename)
+      const { data: urlData } = supabase
+        .storage
+        .from('avatars')
+        .getPublicUrl(filename)
 
-      await supabase
+      const { error: updateErr } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: urlData.publicUrl })
         .eq('id', user.id)
-    } catch (e) {
-      console.error('Avatar upload error:', e)
+      if (updateErr) throw updateErr
+
+      setLocalProfile((p) => p && { ...p, avatar_url: urlData.publicUrl })
+    } catch (e: any) {
+      Alert.alert('Upload failed', e.message)
+    } finally {
+      setUploading(false)
     }
   }
 
-  // Handlers for updating name & radius
-  const saveName = async () => {
-    if (!profile) return
-    await supabase
+  const handleSaveName = async () => {
+    if (!user || !localProfile) return
+    setSavingName(true)
+    const { error } = await supabase
       .from('profiles')
-      .update({ name })
-      .eq('id', profile.id)
+      .update({ name: localProfile.name })
+      .eq('id', user.id)
+    if (error) Alert.alert('Error', error.message)
+    setSavingName(false)
   }
-  const saveRadius = async () => {
-    if (!profile) return
-    const notifyRadius = Number(radius)
-    if (!isNaN(notifyRadius)) {
-      await supabase
-        .from('profiles')
-        .update({ notifyRadius })
-        .eq('id', profile.id)
+
+  const handleSaveRadius = async () => {
+    if (!user || !localProfile) return
+    setSavingRadius(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notify_radius: localProfile.notifyRadius })
+      .eq('id', user.id)
+    if (error) Alert.alert('Error', error.message)
+    setSavingRadius(false)
+  }
+
+  const handleUpgrade = async () => {
+    setProcessingUpgrade(true)
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'create-checkout-session',
+        { body: { price: 'price_1Ri4JjAmjjNRDdy4cpFIfHUI' } }
+      )
+      if (error) throw error
+      if (data.url) Linking.openURL(data.url)
+    } catch (e: any) {
+      Alert.alert('Upgrade failed', e.message)
+    } finally {
+      setProcessingUpgrade(false)
     }
   }
 
-  // Loading state
-  if (isLoading) {
+  if (isLoading || !localProfile) {
     return (
       <ThemedView style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator color={colors.primary} size="large" />
       </ThemedView>
     )
   }
 
-  // No profile (shouldn’t really happen, upsert in the hook covers this)
-  if (!profile) {
-    return (
-      <ThemedView style={styles.container(spacing.lg)}>
-        <ThemedText style={{ color: colors.text }}>
-          No profile found.
-        </ThemedText>
-      </ThemedView>
-    )
+  const headerTextStyle: TextStyle = {
+    fontSize: typography.header.fontSize,
+    fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
+    color: colors.text,
+    marginTop: spacing.lg,
+  }
+
+  const labelTextStyle: TextStyle = {
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
+    color: colors.text,
   }
 
   return (
-    <ThemedView style={styles.container(spacing.lg)}>
-      <TouchableOpacity onPress={pickAvatar}>
-        {profile.avatar_url ? (
+    <ThemedView style={styles.container}>
+      {/* Avatar */}
+      <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
+        {localProfile.avatar_url ? (
           <Image
-            source={{ uri: profile.avatar_url }}
-            style={styles.avatar(spacing.md)}
+            source={{ uri: localProfile.avatar_url }}
+            style={[
+              styles.avatarBase,
+              {
+                width: spacing.md * 4,
+                height: spacing.md * 4,
+                borderRadius: spacing.md * 2,
+              },
+            ]}
           />
         ) : (
           <View
@@ -121,68 +164,107 @@ export function MyAccountScreen() {
         )}
       </TouchableOpacity>
 
-      <ThemedText
-        style={[
-          styles.header(
-            typography.header.fontSize,
-            typography.header.fontWeight as TextStyle['fontWeight']
-          ),
-          { marginTop: spacing.lg, color: colors.text },
-        ]}
-      >
+      {/* Header */}
+      <ThemedText style={[styles.headerBase, headerTextStyle]}>
         My Account
       </ThemedText>
 
-      <TextInput
-        placeholder="Name"
-        placeholderTextColor={colors.textSecondary}
-        value={name}
-        onChangeText={setName}
-        style={[
-          styles.input,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            color: colors.text,
-            borderRadius: borderRadius.md,
-            padding: spacing.sm,
-          },
-        ]}
-      />
-      <Button title="Save Name" color={colors.primary} onPress={saveName} />
+      {/* Dark Mode Toggle */}
+      <View style={styles.field}>
+        <ThemedText style={labelTextStyle}>Dark Mode</ThemedText>
+        <Switch
+          value={mode === 'dark'}
+          onValueChange={toggleTheme}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={mode === 'dark' ? colors.onPrimary : colors.surface}
+        />
+      </View>
 
-      <ThemedText
-        style={[
-          { marginTop: spacing.lg },
-          {
-            fontSize: typography.body.fontSize,
-            fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
-            color: colors.text,
-          } as TextStyle,
-        ]}
-      >
-        Notify me when within:
-      </ThemedText>
-      <TextInput
-        keyboardType="numeric"
-        placeholder="1000"
-        placeholderTextColor={colors.textSecondary}
-        value={radius}
-        onChangeText={setRadius}
-        style={[
-          styles.input,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            color: colors.text,
-            borderRadius: borderRadius.md,
-            padding: spacing.sm,
-          },
-        ]}
+      {/* Name Field */}
+      <View style={styles.field}>
+        <ThemedText style={labelTextStyle}>Name</ThemedText>
+        <TextInput
+          style={[
+            styles.inputBase,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text,
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+              flex: 1,
+              marginLeft: spacing.sm,
+            },
+          ]}
+          value={localProfile.name}
+          onChangeText={(t) =>
+            setLocalProfile((p) => p && { ...p, name: t })
+          }
+        />
+      </View>
+      <Button
+        title="Save Name"
+        color={colors.primary}
+        onPress={handleSaveName}
+        disabled={savingName}
       />
-      <Button title="Save Radius" color={colors.primary} onPress={saveRadius} />
 
-      <Button title="Sign Out" color={colors.error} onPress={signOut} />
+      {/* Radius Field */}
+      <View style={styles.field}>
+        <ThemedText style={labelTextStyle}>Notify Radius</ThemedText>
+        <TextInput
+          style={[
+            styles.inputBase,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text,
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+              flex: 1,
+              marginLeft: spacing.sm,
+            },
+          ]}
+          keyboardType="numeric"
+          value={String(localProfile.notifyRadius)}
+          onChangeText={(t) => {
+            const n = Number(t)
+            if (!isNaN(n)) {
+              setLocalProfile((p) =>
+                p ? { ...p, notifyRadius: n } : p
+              )
+            }
+          }}
+        />
+      </View>
+      <Button
+        title="Save Radius"
+        color={colors.primary}
+        onPress={handleSaveRadius}
+        disabled={savingRadius}
+      />
+
+      {/* Membership */}
+      <View style={styles.field}>
+        <ThemedText style={labelTextStyle}>Membership</ThemedText>
+        {isPremium ? (
+          <ThemedText style={[labelTextStyle, { color: colors.success }]}>
+            Premium Member
+          </ThemedText>
+        ) : (
+          <Button
+            title="Upgrade to Premium"
+            color={colors.accent}
+            onPress={handleUpgrade}
+            disabled={processingUpgrade}
+          />
+        )}
+      </View>
+
+      {/* Sign Out */}
+      <View style={{ marginTop: spacing.lg }}>
+        <Button title="Sign Out" color={colors.error} onPress={signOut} />
+      </View>
     </ThemedView>
   )
 }

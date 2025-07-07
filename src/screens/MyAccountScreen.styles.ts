@@ -1,57 +1,51 @@
 // src/screens/MyAccountScreen.styles.ts
 import { ImageStyle, StyleSheet, TextStyle, ViewStyle } from 'react-native'
 
-export interface Styles {
+interface Styles {
+  container: ViewStyle
   loading: ViewStyle
-  input: TextStyle
+  avatarBase: ImageStyle
   avatarPlaceholder: ViewStyle
-
-  // dynamic:
-  container: (padding: number) => ViewStyle
-  header: (fontSize: number, fontWeight: TextStyle['fontWeight']) => TextStyle
-  avatar: (size: number) => ImageStyle
+  headerBase: TextStyle
+  field: ViewStyle
+  inputBase: TextStyle
 }
 
-const staticStyles = StyleSheet.create({
+export default StyleSheet.create<Styles>({
+  // center everything vertically + standard padding:
+  container: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
   loading: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  input: {
-    fontSize: 16,
-    marginVertical: 8,
-    borderWidth: 1,
+  avatarBase: {
+    alignSelf: 'center',
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignSelf: 'center',
+  },
+  headerBase: {
+    textAlign: 'center',
+    // you can also add a bit of bottom margin here if you like:
+    marginBottom: 24,
+  },
+  // more vertical space between each field
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 16, // increased from 8/16
+  },
+  inputBase: {
+    height: 40,
+    borderWidth: 1,
   },
 })
-
-const styles: Styles = {
-  // static
-  loading: staticStyles.loading,
-  input: staticStyles.input,
-  avatarPlaceholder: staticStyles.avatarPlaceholder,
-
-  // dynamic
-  container: (padding) => ({
-    flex: 1,
-    padding,
-  }),
-  header: (fontSize, fontWeight) => ({
-    fontSize,
-    fontWeight,
-    marginVertical: 16,
-  }),
-  avatar: (size) => ({
-    width: size * 2,
-    height: size * 2,
-    borderRadius: size,
-    marginBottom: size,
-  }),
-}
-
-export default styles
