@@ -1,7 +1,7 @@
+// src/screens/MyAccountScreen.tsx
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as InAppPurchases from 'expo-in-app-purchases';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,10 @@ import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
 import styles from './MyAccountScreen.styles';
 
+// react-native-iap imports
+import { Subscription } from 'react-native-iap';
+import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
+
 interface LocalProfile {
   id: string;
   email: string;
@@ -31,9 +35,15 @@ interface LocalProfile {
 export function MyAccountScreen() {
   const { theme, mode, toggleTheme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
-  const { user, profile, isPremium, isLoading: sessLoading, signOut } = useSession();
+  const {
+    user,
+    profile,
+    isPremium,
+    isLoading: sessLoading,
+    signOut,
+  } = useSession();
 
-  // local copy of profile so we can edit fields
+  // Local editable copy of profile
   const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null);
   useEffect(() => {
     if (profile && !localProfile) {
@@ -48,11 +58,12 @@ export function MyAccountScreen() {
     }
   }, [profile]);
 
-  // loading states for each action
+  // Loading states
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [savingRadius, setSavingRadius] = useState(false);
 
+  // Radius options
   const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
 
   /* ---------- Avatar picker & upload ---------- */
@@ -93,7 +104,7 @@ export function MyAccountScreen() {
         .eq('id', user.id);
       if (updateErr) throw updateErr;
 
-      setLocalProfile((p: LocalProfile | null) =>
+      setLocalProfile((p) =>
         p ? { ...p, avatar_url: urlData.publicUrl } : p
       );
     } catch (e: any) {
@@ -116,9 +127,7 @@ export function MyAccountScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else if (data) {
-      setLocalProfile((p: LocalProfile | null) =>
-        p ? { ...p, name: data.name } : p
-      );
+      setLocalProfile((p) => p ? { ...p, name: data.name } : p);
     }
     setSavingName(false);
   };
@@ -136,82 +145,46 @@ export function MyAccountScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else if (data) {
-      setLocalProfile((p: LocalProfile | null) =>
+      setLocalProfile((p) =>
         p ? { ...p, notifyRadius: data.notify_radius } : p
       );
     }
     setSavingRadius(false);
   };
 
-  /* ---------- In-App Purchase Logic ---------- */
-  const productIds = ['adFreeSubBathroomInApp']; // ← replace with your App Store / Play IDs
-  const [products, setProducts] = useState<InAppPurchases.IAPItemDetails[]>([]);
-  const [subsLoading, setSubsLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  /* ---------- In-App Purchase via react-native-iap ---------- */
+  const [plans, setPlans] = useState<Subscription[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
 
+  // Initialize IAP and load subscription products
   useEffect(() => {
-    let purchaseListener: any;
-
-    async function initIAP() {
-      setSubsLoading(true);
-      await InAppPurchases.connectAsync();
-
-      // fetch your configured products
-      const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        setProducts(results ?? []);
+    (async () => {
+      await initIAP();
+      try {
+        const subs = await fetchPlans();
+        setPlans(subs);
+      } catch (e) {
+        console.error('Failed to load plans', e);
+      } finally {
+        setPlansLoading(false);
       }
-
-      // check restore history once
-      const historyResponse = await InAppPurchases.getPurchaseHistoryAsync();
-      const pastPurchases = historyResponse.results ?? [];
-      const found = pastPurchases.some(
-        (h) => productIds.includes(h.productId) && h.acknowledged
-      );
-      setIsSubscribed(found);
-      setSubsLoading(false);
-
-      // set up listener for new purchases
-      purchaseListener = InAppPurchases.setPurchaseListener(async ({ responseCode, results, errorCode }) => {
-        if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-          for (const purchase of results) {
-            if (!purchase.acknowledged) {
-              await InAppPurchases.finishTransactionAsync(purchase, false);
-            }
-            setIsSubscribed(true);
-          }
-        } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
-          // user cancelled
-        } else {
-          console.error('IAP error code', errorCode);
-        }
-      });
-    }
-
-    initIAP();
-
-    return () => {
-      InAppPurchases.disconnectAsync();
-    };
+    })();
   }, []);
 
-  const purchase = async (productId: string) => {
-    setSubsLoading(true);
-    await InAppPurchases.purchaseItemAsync(productId);
-    // listener will update isSubscribed
-    setSubsLoading(false);
-  };
-
-  const restore = async () => {
-    setSubsLoading(true);
-    const historyResponse = await InAppPurchases.getPurchaseHistoryAsync();
-    const pastPurchases = historyResponse.results ?? [];
-    const found = pastPurchases.some(
-      (h) => productIds.includes(h.productId) && h.acknowledged
-    );
-    setIsSubscribed(found);
-    setSubsLoading(false);
-  };
+  const handlePurchase = useCallback(
+    async (sku: string) => {
+      setPurchaseLoading(true);
+      try {
+        await purchasePremium(sku);
+      } catch (err: any) {
+        Alert.alert('Purchase Error', err.message);
+      } finally {
+        setPurchaseLoading(false);
+      }
+    },
+    []
+  );
 
   /* ---------- Render loading state ---------- */
   if (sessLoading || !localProfile) {
@@ -222,7 +195,7 @@ export function MyAccountScreen() {
     );
   }
 
-  /* ---------- Inline text styles ---------- */
+  /* ---------- Text Styles ---------- */
   const headerTextStyle: TextStyle = {
     fontSize: typography.header.fontSize,
     fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
@@ -252,12 +225,7 @@ export function MyAccountScreen() {
             ]}
           />
         ) : (
-          <View
-            style={[
-              styles.avatarPlaceholder,
-              { backgroundColor: colors.surface },
-            ]}
-          />
+          <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surface }]} />
         )}
       </TouchableOpacity>
 
@@ -295,9 +263,7 @@ export function MyAccountScreen() {
           ]}
           value={localProfile.name}
           onChangeText={(text) =>
-            setLocalProfile((p: LocalProfile | null) =>
-              p ? { ...p, name: text } : p
-            )
+            setLocalProfile((p) => (p ? { ...p, name: text } : p))
           }
         />
       </View>
@@ -324,9 +290,7 @@ export function MyAccountScreen() {
           <Picker
             selectedValue={localProfile.notifyRadius}
             onValueChange={(val) =>
-              setLocalProfile((p: LocalProfile | null) =>
-                p ? { ...p, notifyRadius: val } : p
-              )
+              setLocalProfile((p) => (p ? { ...p, notifyRadius: val } : p))
             }
             dropdownIconColor={colors.textSecondary}
             style={{ color: colors.text }}
@@ -351,31 +315,45 @@ export function MyAccountScreen() {
       {/* Membership */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Membership</ThemedText>
-        {subsLoading ? (
+        {plansLoading ? (
           <ActivityIndicator color={colors.primary} />
-        ) : isSubscribed ? (
+        ) : isPremium ? (
           <ThemedText
-            style={[labelTextStyle, { color: colors.success, marginTop: spacing.sm }]}
+            style={[
+              labelTextStyle,
+              { color: colors.success, marginTop: spacing.sm },
+            ]}
           >
-            You’re Premium 🎉
+            🎉 You’re Premium!
           </ThemedText>
         ) : (
-          products.map((prod) => (
-            <Button
-              key={prod.productId}
-              title={`Subscribe (${prod.price})`}
-              color={colors.accent}
-              onPress={() => purchase(prod.productId)}
-            />
+          plans.map((plan) => (
+            <TouchableOpacity
+              key={plan.productId}
+              onPress={() => handlePurchase(plan.productId)}
+              disabled={purchaseLoading}
+              style={{
+                backgroundColor: colors.accent,
+                padding: spacing.sm,
+                borderRadius: borderRadius.md,
+                alignItems: 'center',
+                marginTop: spacing.sm,
+              }}
+            >
+              {purchaseLoading ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <ThemedText
+                  style={{
+                    color: colors.onPrimary,
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Subscribe {plan.title} {plan.description ? ` — ${plan.description}` : ''}
+                </ThemedText>
+              )}
+            </TouchableOpacity>
           ))
-        )}
-
-        {!subsLoading && !isSubscribed && (
-          <Button
-            title="Restore Purchases"
-            color={colors.accent}
-            onPress={restore}
-          />
         )}
       </View>
 
