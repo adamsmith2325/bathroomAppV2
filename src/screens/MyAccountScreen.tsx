@@ -144,7 +144,7 @@ export function MyAccountScreen() {
   };
 
   /* ---------- In-App Purchase Logic ---------- */
-  const productIds = ['YOUR_PRODUCT_ID']; // ← replace with your App Store / Play IDs
+  const productIds = ['adFreeSubBathroomInApp']; // ← replace with your App Store / Play IDs
   const [products, setProducts] = useState<InAppPurchases.IAPItemDetails[]>([]);
   const [subsLoading, setSubsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
