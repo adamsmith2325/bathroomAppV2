@@ -1,6 +1,7 @@
 // src/screens/MyAccountScreen.tsx
 import { Picker } from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker'
+import * as InAppPurchases from 'expo-in-app-purchases'
 import React, { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -325,9 +326,9 @@ export function MyAccountScreen() {
         ) : (
           <Button
             title="Upgrade to Premium"
-            color={colors.accent}
-            onPress={handleUpgrade}
-            disabled={processingUpgrade}
+            onPress={() =>
+              InAppPurchases.purchaseItemAsync('com.yourcompany.yourapp.premium_monthly')
+            }
           />
         )}
       </View>
