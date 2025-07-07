@@ -10,7 +10,7 @@ import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
 import AuthScreen from './src/screens/AuthScreen'
-import { useAppleSubscriptions } from './src/hooks/useAppleSubscriptions'
+
 import * as Sentry from '@sentry/react-native'
 
 
@@ -48,7 +48,6 @@ Notifications.setNotificationHandler({
 
 function Root() {
   const { session } = useSession()
-  const products = useAppleSubscriptions()
   
   // register a listener so tapping the notif navigates
   useEffect(() => {
