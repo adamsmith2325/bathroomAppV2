@@ -13,7 +13,7 @@ import { supabase } from './supabase'
 interface Profile {
   id: string
   email: string
-  name: string
+  full_name: string
   avatar_url: string | null
   notifyRadius: number
   is_premium: boolean
@@ -91,9 +91,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             {
               id: user.id,
               email: user.email ?? '',
-              name: user.email?.split('@')[0] ?? '',
+              full_name: user.email?.split('@')[0] ?? '',
               avatar_url: null,
-              notify_radius: 1000,
+              notify_radius: 0,
               is_premium: false,
             },
             { onConflict: 'id' }
@@ -105,7 +105,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // c) Fetch full row (snake_case)
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, email, name, avatar_url, notify_radius, is_premium')
+          .select('id, email, full_name, avatar_url, notify_radius, is_premium')
           .eq('id', user.id)
           .single()
 
@@ -115,7 +115,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           const prof: Profile = {
             id: data.id,
             email: data.email,
-            name: data.name,
+            full_name: data.full_name,
             avatar_url: data.avatar_url,
             notifyRadius: data.notify_radius,
             is_premium: data.is_premium,
@@ -158,9 +158,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       await supabase.from('profiles').insert({
         id: data.user.id,
         email: data.user.email ?? '',
-        name: data.user.email?.split('@')[0] ?? '',
+        full_name: null,
         avatar_url: null,
-        notify_radius: 1000,
+        notify_radius: 0,
         is_premium: false,
       })
     }

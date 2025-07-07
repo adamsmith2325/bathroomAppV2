@@ -84,7 +84,7 @@ export function MyAccountScreen() {
     setSavingName(true)
     const { error } = await supabase
       .from('profiles')
-      .update({ name: localProfile.name })
+      .update({ name: localProfile.full_name })
       .eq('id', user.id)
     if (error) Alert.alert('Error', error.message)
     setSavingName(false)
@@ -196,7 +196,7 @@ export function MyAccountScreen() {
               marginLeft: spacing.sm,
             },
           ]}
-          value={localProfile.name}
+          value={localProfile.full_name}
           onChangeText={(t) =>
             setLocalProfile((p) => p && { ...p, name: t })
           }
