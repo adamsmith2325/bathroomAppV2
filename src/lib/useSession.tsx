@@ -13,7 +13,7 @@ import { supabase } from './supabase'
 interface Profile {
   id: string
   email: string
-  full_name: string
+  name: string
   avatar_url: string | null
   notifyRadius: number
   is_premium: boolean
@@ -39,8 +39,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isPremium, setIsPremium] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // 1) Load initial session & subscribe
+  // 1) Load initial session & subscribe for auth changes
   useEffect(() => {
+    // initial load
     const load = async () => {
       const { data } = await supabase.auth.getSession()
       console.log('🛠️ [useSession] initial session load →', data.session)
@@ -48,132 +49,115 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setUser(data.session?.user ?? null)
     }
     load()
-    const { data: listener } = supabase.auth.onAuthStateChange((_, sess) => {
-      console.log('🛠️ [useSession] onAuthStateChange →', sess)
-      setSession(sess)
-      setUser(sess?.user ?? null)
-    })
+
+    // subscribe to auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, sess) => {
+        console.log('🛠️ [useSession] onAuthStateChange →', event, sess)
+        setSession(sess)
+        setUser(sess?.user ?? null)
+
+        // clear profile only when user explicitly signs out
+        if (event === 'SIGNED_OUT') {
+          console.log('🛠️ [useSession] user signed out → clearing profile')
+          setProfile(null)
+          setIsPremium(false)
+          AsyncStorage.removeItem('cached_profile').catch(() => {})
+        }
+      }
+    )
+
     return () => {
       listener.subscription.unsubscribe()
     }
   }, [])
 
-  // 2) Upsert, cache & fetch profile whenever `user` changes
+  // 2) When user logs in, insert defaults if needed and fetch profile
   useEffect(() => {
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
+
     let mounted = true
-    const KEY = 'cached_profile'
+    const CACHE_KEY = 'cached_profile'
 
-    const init = async () => {
-      console.log('🛠️ [useSession] initProfile, user.id =', user?.id)
-      if (!user) {
-        console.log('🛠️ [useSession] no user, clearing profile')
-        if (mounted) {
-          setProfile(null)
-          setIsPremium(false)
-          setIsLoading(false)
-        }
-        return
-      }
-
-      // a) Load from storage cache
-      const json = await AsyncStorage.getItem(KEY)
-      if (json && mounted) {
-        console.log('🛠️ [useSession] loaded profile from cache →', json)
-        setProfile(JSON.parse(json))
-      }
-
+    const initProfile = async () => {
       setIsLoading(true)
-      try {
-        // b) Upsert defaults (snake_case)
-        const { error: upsertErr } = await supabase
-          .from('profiles')
-          .upsert(
-            {
-              id: user.id,
-              email: user.email ?? '',
-              full_name: user.email?.split('@')[0] ?? '',
-              avatar_url: null,
-              notify_radius: 0,
-              is_premium: false,
-            },
-            { onConflict: 'id' }
-          )
-        if (upsertErr) {
-          console.warn('🛠️ [useSession] upsert error:', upsertErr)
-        }
 
-        // c) Fetch full row (snake_case)
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, avatar_url, notify_radius, is_premium')
-          .eq('id', user.id)
-          .single()
+      // a) load from cache
+      const cached = await AsyncStorage.getItem(CACHE_KEY)
+      if (cached && mounted) {
+        console.log('🛠️ [useSession] loaded profile from cache →', cached)
+        setProfile(JSON.parse(cached))
+      }
 
-        console.log('🛠️ [useSession] fetch profile →', { data, error })
-        if (!error && data && mounted) {
-          // d) Map to your Profile interface
-          const prof: Profile = {
-            id: data.id,
-            email: data.email,
-            full_name: data.full_name,
-            avatar_url: data.avatar_url,
-            notifyRadius: data.notify_radius,
-            is_premium: data.is_premium,
-          }
-          setProfile(prof)
-          setIsPremium(prof.is_premium)
-          await AsyncStorage.setItem(KEY, JSON.stringify(prof))
-          console.log('🛠️ [useSession] cached profile to disk')
+      // b) insert default row (only if it doesn't exist)
+      const { error: insertErr } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email ?? '',
+          name: null,
+          avatar_url: null,
+          notify_radius: 0,
+          is_premium: false,
+        })
+      // ignore duplicate-key errors (code 23505)
+      if (insertErr && insertErr.code !== '23505') {
+        console.warn('🛠️ [useSession] insert default profile error', insertErr)
+      }
+
+      // c) fetch the canonical profile row
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, name, avatar_url, notify_radius, is_premium')
+        .eq('id', user.id)
+        .single()
+
+      console.log('🛠️ [useSession] fetch profile →', { data, error })
+      if (!error && data && mounted) {
+        const prof: Profile = {
+          id: data.id,
+          email: data.email,
+          name: data.name,
+          avatar_url: data.avatar_url,
+          notifyRadius: data.notify_radius,
+          is_premium: data.is_premium,
         }
-      } catch (e) {
-        console.warn('🛠️ [useSession] unexpected error:', e)
-      } finally {
-        if (mounted) setIsLoading(false)
+        setProfile(prof)
+        setIsPremium(prof.is_premium)
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(prof))
+        console.log('🛠️ [useSession] cached profile to disk')
+      }
+
+      if (mounted) {
+        setIsLoading(false)
       }
     }
 
-    init()
+    initProfile()
     return () => {
       mounted = false
     }
   }, [user])
 
+  // 3) Auth actions
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    console.log('🔐 signIn → data.session:', data.session)
-    console.log('🔐 signIn → data.user:', data.user)
-    console.log('🔐 signIn → error:', error)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    setSession(data.session)
-    setUser(data.user)
+    // onAuthStateChange will trigger profile init
   }
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    console.log('🔐 signUp → data.session:', data.session)
-    console.log('🔐 signUp → data.user:', data.user)
-    console.log('🔐 signUp → error:', error)
+    const { error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: data.user.email ?? '',
-        full_name: null,
-        avatar_url: null,
-        notify_radius: 0,
-        is_premium: false,
-      })
-    }
+    // onAuthStateChange will run initProfile
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    setSession(null)
-    setUser(null)
-    setProfile(null)
-    setIsPremium(false)
-    await AsyncStorage.removeItem('cached_profile')
-    console.log('🛠️ [useSession] signed out, cleared cache')
+    // onAuthStateChange will clear profile
   }
 
   return (

@@ -1,3 +1,5 @@
+// src/screens/MyAccountScreen.tsx
+import { Picker } from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker'
 import React, { useEffect, useState } from 'react'
 import {
@@ -18,21 +20,44 @@ import { useTheme } from '../lib/themeContext'
 import { useSession } from '../lib/useSession'
 import styles from './MyAccountScreen.styles'
 
+interface LocalProfile {
+  id: string
+  email: string
+  name: string           // ← use “name” here
+  avatar_url: string | null
+  notifyRadius: number
+  is_premium: boolean
+}
+
 export function MyAccountScreen() {
   const { theme, mode, toggleTheme } = useTheme()
   const { colors, spacing, borderRadius, typography } = theme
   const { user, profile, isPremium, isLoading, signOut } = useSession()
 
-  const [localProfile, setLocalProfile] = useState(profile)
+  // Only seed once from context.profile
+  const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null)
+  useEffect(() => {
+    if (profile && localProfile === null) {
+      // Profile from context has shape { name: string, notifyRadius: number, … }
+      setLocalProfile({
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        avatar_url: profile.avatar_url,
+        notifyRadius: profile.notifyRadius,
+        is_premium: profile.is_premium,
+      })
+    }
+  }, [profile, localProfile])
+
   const [uploading, setUploading] = useState(false)
   const [savingName, setSavingName] = useState(false)
   const [savingRadius, setSavingRadius] = useState(false)
   const [processingUpgrade, setProcessingUpgrade] = useState(false)
 
-  useEffect(() => {
-    setLocalProfile(profile)
-  }, [profile])
+  const radiusOptions = [0, 250, 500, 1000, 2000, 5000]
 
+  // 1) Avatar picker & upload (unchanged)
   const pickAvatar = async () => {
     if (!user) return
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -79,44 +104,86 @@ export function MyAccountScreen() {
     }
   }
 
+  // 2) Save Name
   const handleSaveName = async () => {
     if (!user || !localProfile) return
     setSavingName(true)
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .update({ name: localProfile.full_name })
+      .update({ name: localProfile.name })
       .eq('id', user.id)
-    if (error) Alert.alert('Error', error.message)
+      .select()
+      .single()
+
+    if (error) {
+      Alert.alert('Error', error.message)
+    } else if (data) {
+      // update the local “name” so the UI reflects exactly what’s in the DB
+      setLocalProfile((p) => p && { ...p, name: data.name })
+    }
     setSavingName(false)
   }
 
+  // 3) Save Radius
   const handleSaveRadius = async () => {
     if (!user || !localProfile) return
     setSavingRadius(true)
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .update({ notify_radius: localProfile.notifyRadius })
       .eq('id', user.id)
-    if (error) Alert.alert('Error', error.message)
+      .select()
+      .single()
+
+    if (error) {
+      Alert.alert('Error', error.message)
+    } else if (data) {
+      setLocalProfile((p) =>
+        p ? { ...p, notifyRadius: data.notify_radius } : p
+      )
+    }
     setSavingRadius(false)
   }
 
-  const handleUpgrade = async () => {
-    setProcessingUpgrade(true)
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        'create-checkout-session',
-        { body: { price: 'price_1Ri4JjAmjjNRDdy4cpFIfHUI' } }
-      )
-      if (error) throw error
-      if (data.url) Linking.openURL(data.url)
-    } catch (e: any) {
-      Alert.alert('Upgrade failed', e.message)
-    } finally {
-      setProcessingUpgrade(false)
-    }
-  }
+  // inside src/screens/MyAccountScreen.tsx, replace your old handleUpgrade with:
 
+    const handleUpgrade = async () => {
+      setProcessingUpgrade(true)
+      try {
+        // 1) invoke your Edge Function
+    const res = await supabase.functions.invoke(
+      "create-checkout-session",
+      {
+        body: JSON.stringify({ price: "price_1Ri4JjAmjjNRDdy4cpFIfHUI" }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    // 2) if Supabase-client saw an error, show it
+    if (res.error) {
+      console.error('🔴 create-checkout-session → error:', res.error)
+      throw res.error
+    }
+
+    // 3) ensure we got back an object with a `url` property
+    const payload = res.data as { url?: string }
+    if (!payload || typeof payload.url !== 'string') {
+      console.error('🔴 create-checkout-session → bad payload:', res.data)
+      throw new Error('Unexpected response from upgrade function')
+    }
+
+    // 4) open Stripe Checkout in browser
+    await Linking.openURL(payload.url)
+  } catch (e: any) {
+    console.error('🔴 Upgrade failed:', e)
+    Alert.alert('Upgrade failed', e.message ?? String(e))
+  } finally {
+    setProcessingUpgrade(false)
+  }
+}
+
+  // 5) Loading or not‐yet‐configured
   if (isLoading || !localProfile) {
     return (
       <ThemedView style={styles.loading}>
@@ -125,19 +192,20 @@ export function MyAccountScreen() {
     )
   }
 
+  // Inline text styles
   const headerTextStyle: TextStyle = {
     fontSize: typography.header.fontSize,
     fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
     color: colors.text,
-    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   }
-
   const labelTextStyle: TextStyle = {
     fontSize: typography.body.fontSize,
     fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
     color: colors.text,
   }
 
+  // 6) Render
   return (
     <ThemedView style={styles.container}>
       {/* Avatar */}
@@ -169,7 +237,7 @@ export function MyAccountScreen() {
         My Account
       </ThemedText>
 
-      {/* Dark Mode Toggle */}
+      {/* Dark Mode */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Dark Mode</ThemedText>
         <Switch
@@ -180,7 +248,7 @@ export function MyAccountScreen() {
         />
       </View>
 
-      {/* Name Field */}
+      {/* Name */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Name</ThemedText>
         <TextInput
@@ -196,7 +264,7 @@ export function MyAccountScreen() {
               marginLeft: spacing.sm,
             },
           ]}
-          value={localProfile.full_name}
+          value={localProfile.name}
           onChangeText={(t) =>
             setLocalProfile((p) => p && { ...p, name: t })
           }
@@ -209,33 +277,36 @@ export function MyAccountScreen() {
         disabled={savingName}
       />
 
-      {/* Radius Field */}
+      {/* Radius */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Notify Radius</ThemedText>
-        <TextInput
-          style={[
-            styles.inputBase,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.text,
-              borderRadius: borderRadius.md,
-              padding: spacing.sm,
-              flex: 1,
-              marginLeft: spacing.sm,
-            },
-          ]}
-          keyboardType="numeric"
-          value={String(localProfile.notifyRadius)}
-          onChangeText={(t) => {
-            const n = Number(t)
-            if (!isNaN(n)) {
-              setLocalProfile((p) =>
-                p ? { ...p, notifyRadius: n } : p
-              )
-            }
+        <View
+          style={{
+            flex: 1,
+            marginLeft: spacing.sm,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: borderRadius.md,
           }}
-        />
+        >
+          <Picker
+            selectedValue={localProfile.notifyRadius}
+            onValueChange={(val) =>
+              setLocalProfile((p) => p && { ...p, notifyRadius: val })
+            }
+            dropdownIconColor={colors.textSecondary}
+            style={{ color: colors.text }}
+          >
+            {radiusOptions.map((r) => (
+              <Picker.Item
+                key={r}
+                value={r}
+                label={r === 0 ? 'Off' : `${r} ft`}
+              />
+            ))}
+          </Picker>
+        </View>
       </View>
       <Button
         title="Save Radius"

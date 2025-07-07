@@ -93,9 +93,9 @@ function GeofenceRegistrar() {
       // 2) load radius
       const { data: profile } = await supabase
         .from('profiles')
-        .select('alert_radius')
+        .select('notify_radius')
         .single()
-      const radiusFeet = profile?.alert_radius ?? 0
+      const radiusFeet = profile?.notify_radius ?? 0
 
       // if user turned alerts OFF, stop any running geofences & exit
       if (radiusFeet <= 0) {
