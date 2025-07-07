@@ -1,45 +1,49 @@
-// src/screens/MyAccountScreen.tsx
-import { Picker } from '@react-native-picker/picker'
-import * as ImagePicker from 'expo-image-picker'
-import * as InAppPurchases from 'expo-in-app-purchases'
-import React, { useEffect, useState } from 'react'
+import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Button,
   Image,
-  Linking,
   Switch,
   TextInput,
   TextStyle,
   TouchableOpacity,
-  View,
-} from 'react-native'
-import { ThemedText, ThemedView } from '../components/Themed'
-import { supabase } from '../lib/supabase'
-import { useTheme } from '../lib/themeContext'
-import { useSession } from '../lib/useSession'
-import styles from './MyAccountScreen.styles'
+  View
+} from 'react-native';
+import { ThemedText, ThemedView } from '../components/Themed';
+import { supabase } from '../lib/supabase';
+import { useTheme } from '../lib/themeContext';
+import { useAppleSubscriptions } from '../lib/useAppleSubscriptions'; // ← your custom hook
+import { useSession } from '../lib/useSession';
+import styles from './MyAccountScreen.styles';
 
 interface LocalProfile {
-  id: string
-  email: string
-  name: string           // ← use “name” here
-  avatar_url: string | null
-  notifyRadius: number
-  is_premium: boolean
+  id: string;
+  email: string;
+  name: string;
+  avatar_url: string | null;
+  notifyRadius: number;
+  is_premium: boolean;
 }
 
 export function MyAccountScreen() {
-  const { theme, mode, toggleTheme } = useTheme()
-  const { colors, spacing, borderRadius, typography } = theme
-  const { user, profile, isPremium, isLoading, signOut } = useSession()
+  const { theme, mode, toggleTheme } = useTheme();
+  const { colors, spacing, borderRadius, typography } = theme;
+  const { user, profile, isPremium, isLoading: sessLoading, signOut } = useSession();
+  const {
+    products,
+    isLoading: subsLoading,
+    isSubscribed,
+    purchase,
+    restore,
+  } = useAppleSubscriptions();
 
-  // Only seed once from context.profile
-  const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null)
+  // local copy of profile so we can edit fields
+  const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null);
   useEffect(() => {
-    if (profile && localProfile === null) {
-      // Profile from context has shape { name: string, notifyRadius: number, … }
+    if (profile && !localProfile) {
       setLocalProfile({
         id: profile.id,
         email: profile.email,
@@ -47,168 +51,126 @@ export function MyAccountScreen() {
         avatar_url: profile.avatar_url,
         notifyRadius: profile.notifyRadius,
         is_premium: profile.is_premium,
-      })
+      });
     }
-  }, [profile, localProfile])
+  }, [profile]);
 
-  const [uploading, setUploading] = useState(false)
-  const [savingName, setSavingName] = useState(false)
-  const [savingRadius, setSavingRadius] = useState(false)
-  const [processingUpgrade, setProcessingUpgrade] = useState(false)
+  // loading states for each action
+  const [uploading, setUploading] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savingRadius, setSavingRadius] = useState(false);
 
-  const radiusOptions = [0, 250, 500, 1000, 2000, 5000]
+  const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
 
-  // 1) Avatar picker & upload (unchanged)
+  /* ---------- Avatar picker & upload ---------- */
   const pickAvatar = async () => {
-    if (!user) return
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!user) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'You need to allow photo access.')
-      return
+      return Alert.alert('Permission required', 'You need to allow photo access.');
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.5,
-    })
-    if (result.canceled) return
+    });
+    if (result.canceled) return;
 
-    setUploading(true)
+    setUploading(true);
     try {
-      const uri = result.assets[0].uri
-      const resp = await fetch(uri)
-      const blob = await resp.blob()
-      const ext = uri.split('.').pop()!
-      const filename = `${user.id}.${ext}`
+      const uri = result.assets[0].uri;
+      const resp = await fetch(uri);
+      const blob = await resp.blob();
+      const ext = uri.split('.').pop()!;
+      const filename = `${user.id}.${ext}`;
 
       const { error: uploadErr } = await supabase
         .storage
         .from('avatars')
-        .upload(filename, blob, { upsert: true })
-      if (uploadErr) throw uploadErr
+        .upload(filename, blob, { upsert: true });
+      if (uploadErr) throw uploadErr;
 
       const { data: urlData } = supabase
         .storage
         .from('avatars')
-        .getPublicUrl(filename)
+        .getPublicUrl(filename);
 
       const { error: updateErr } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user.id)
-      if (updateErr) throw updateErr
+        .eq('id', user.id);
+      if (updateErr) throw updateErr;
 
-      setLocalProfile((p) => p && { ...p, avatar_url: urlData.publicUrl })
+      setLocalProfile(p => p ? { ...p, avatar_url: urlData.publicUrl } : p);
     } catch (e: any) {
-      Alert.alert('Upload failed', e.message)
+      Alert.alert('Upload failed', e.message);
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
-  // 2) Save Name
+  /* ---------- Save name ---------- */
   const handleSaveName = async () => {
-    if (!user || !localProfile) return
-    setSavingName(true)
+    if (!user || !localProfile) return;
+    setSavingName(true);
     const { data, error } = await supabase
       .from('profiles')
       .update({ name: localProfile.name })
       .eq('id', user.id)
       .select()
-      .single()
-
+      .single();
     if (error) {
-      Alert.alert('Error', error.message)
+      Alert.alert('Error', error.message);
     } else if (data) {
-      // update the local “name” so the UI reflects exactly what’s in the DB
-      setLocalProfile((p) => p && { ...p, name: data.name })
+      setLocalProfile(p => p ? { ...p, name: data.name } : p);
     }
-    setSavingName(false)
-  }
+    setSavingName(false);
+  };
 
-  // 3) Save Radius
+  /* ---------- Save radius ---------- */
   const handleSaveRadius = async () => {
-    if (!user || !localProfile) return
-    setSavingRadius(true)
+    if (!user || !localProfile) return;
+    setSavingRadius(true);
     const { data, error } = await supabase
       .from('profiles')
       .update({ notify_radius: localProfile.notifyRadius })
       .eq('id', user.id)
       .select()
-      .single()
-
+      .single();
     if (error) {
-      Alert.alert('Error', error.message)
+      Alert.alert('Error', error.message);
     } else if (data) {
-      setLocalProfile((p) =>
+      setLocalProfile(p =>
         p ? { ...p, notifyRadius: data.notify_radius } : p
-      )
+      );
     }
-    setSavingRadius(false)
-  }
+    setSavingRadius(false);
+  };
 
-  // inside src/screens/MyAccountScreen.tsx, replace your old handleUpgrade with:
-
-    const handleUpgrade = async () => {
-      setProcessingUpgrade(true)
-      try {
-        // 1) invoke your Edge Function
-    const res = await supabase.functions.invoke(
-      "create-checkout-session",
-      {
-        body: JSON.stringify({ price: "price_1Ri4JjAmjjNRDdy4cpFIfHUI" }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    // 2) if Supabase-client saw an error, show it
-    if (res.error) {
-      console.error('🔴 create-checkout-session → error:', res.error)
-      throw res.error
-    }
-
-    // 3) ensure we got back an object with a `url` property
-    const payload = res.data as { url?: string }
-    if (!payload || typeof payload.url !== 'string') {
-      console.error('🔴 create-checkout-session → bad payload:', res.data)
-      throw new Error('Unexpected response from upgrade function')
-    }
-
-    // 4) open Stripe Checkout in browser
-    await Linking.openURL(payload.url)
-  } catch (e: any) {
-    console.error('🔴 Upgrade failed:', e)
-    Alert.alert('Upgrade failed', e.message ?? String(e))
-  } finally {
-    setProcessingUpgrade(false)
-  }
-}
-
-  // 5) Loading or not‐yet‐configured
-  if (isLoading || !localProfile) {
+  /* ---------- If still loading session or profile ---------- */
+  if (sessLoading || !localProfile) {
     return (
       <ThemedView style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </ThemedView>
-    )
+    );
   }
 
-  // Inline text styles
+  /* ---------- Inline text styles ---------- */
   const headerTextStyle: TextStyle = {
     fontSize: typography.header.fontSize,
     fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
     color: colors.text,
     marginBottom: spacing.lg,
-  }
+  };
   const labelTextStyle: TextStyle = {
     fontSize: typography.body.fontSize,
     fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
     color: colors.text,
-  }
+  };
 
-  // 6) Render
   return (
     <ThemedView style={styles.container}>
+
       {/* Avatar */}
       <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
         {localProfile.avatar_url ? (
@@ -266,8 +228,8 @@ export function MyAccountScreen() {
             },
           ]}
           value={localProfile.name}
-          onChangeText={(t) =>
-            setLocalProfile((p) => p && { ...p, name: t })
+          onChangeText={text =>
+            setLocalProfile(p => p ? { ...p, name: text } : p)
           }
         />
       </View>
@@ -278,7 +240,7 @@ export function MyAccountScreen() {
         disabled={savingName}
       />
 
-      {/* Radius */}
+      {/* Radius Picker */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Notify Radius</ThemedText>
         <View
@@ -293,13 +255,13 @@ export function MyAccountScreen() {
         >
           <Picker
             selectedValue={localProfile.notifyRadius}
-            onValueChange={(val) =>
-              setLocalProfile((p) => p && { ...p, notifyRadius: val })
+            onValueChange={val =>
+              setLocalProfile(p => p ? { ...p, notifyRadius: val } : p)
             }
             dropdownIconColor={colors.textSecondary}
             style={{ color: colors.text }}
           >
-            {radiusOptions.map((r) => (
+            {radiusOptions.map(r => (
               <Picker.Item
                 key={r}
                 value={r}
@@ -319,16 +281,34 @@ export function MyAccountScreen() {
       {/* Membership */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Membership</ThemedText>
-        {isPremium ? (
-          <ThemedText style={[labelTextStyle, { color: colors.success }]}>
-            Premium Member
+
+        {/* still querying your Apple IAP hook? */}
+        {subsLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : isSubscribed ? (
+          <ThemedText
+            style={[labelTextStyle, { color: colors.success }]}
+          >
+            You’re Premium
           </ThemedText>
         ) : (
+          // show each product button
+          products.map(prod => (
+            <Button
+              key={prod.productId}
+              title={`Subscribe (${prod.price})`}
+              color={colors.accent}
+              onPress={() => purchase(prod.productId)}
+            />
+          ))
+        )}
+
+        {/* restore purchases button */}
+        {!subsLoading && (
           <Button
-            title="Upgrade to Premium"
-            onPress={() =>
-              InAppPurchases.purchaseItemAsync('com.yourcompany.yourapp.premium_monthly')
-            }
+            title="Restore Purchases"
+            color={colors.accent}
+            onPress={restore}
           />
         )}
       </View>
@@ -338,5 +318,5 @@ export function MyAccountScreen() {
         <Button title="Sign Out" color={colors.error} onPress={signOut} />
       </View>
     </ThemedView>
-  )
+  );
 }
