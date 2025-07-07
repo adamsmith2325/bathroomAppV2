@@ -5,11 +5,11 @@ import * as Notifications from 'expo-notifications'
 import React, { useEffect } from 'react'
 import { LogBox, Platform } from 'react-native'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
+import { supabase } from './src/lib/supabase'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
 import AuthScreen from './src/screens/AuthScreen'
-import { supabase } from './supabase'
 
 import * as Sentry from '@sentry/react-native'
 

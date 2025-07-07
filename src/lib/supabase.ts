@@ -16,6 +16,16 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY in app.json extra!')
 }
 
+;(async () => {
+  try {
+    await AsyncStorage.setItem('STORAGE_TEST', '✅ got disk')
+    const v = await AsyncStorage.getItem('STORAGE_TEST')
+    console.log('🔍 AsyncStorage test:', v) // should print "✅ got disk"
+  } catch (err) {
+    console.error('❌ AsyncStorage error:', err)
+  }
+})()
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: AsyncStorage,
@@ -24,3 +34,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     detectSessionInUrl: false,
   },
 })
+
+supabase.auth.getSession().then(({ data }) =>
+  console.log('🔑 Supabase restored session:', data.session)
+)

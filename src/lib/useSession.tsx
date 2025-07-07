@@ -8,7 +8,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { supabase } from '../../supabase'
+import { supabase } from './supabase'
 
 interface Profile {
   id: string
@@ -110,15 +110,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    setSession(data.session)
-    setUser(data.user)
-  }
+const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  console.log('🔐 signIn → data.session:', data.session)
+  console.log('🔐 signIn → data.user:', data.user)
+  console.log('🔐 signIn → error:', error)
+  if (error) throw error
+  setSession(data.session)
+  setUser(data.user)
+}
 
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password })
+    console.log('🔐 signUp → data.session:', data.session)
+    console.log('🔐 signUp → data.user:', data.user)
+    console.log('🔐 signUp → error:', error)
     if (error) throw error
     if (data.user) {
       await supabase.from('profiles').insert({
