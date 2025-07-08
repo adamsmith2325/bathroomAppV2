@@ -10,6 +10,10 @@
     },
     "jsx": "react-native", // or "react-jsx" if using React 17+
     "lib": ["dom", "esnext"],
+    "types": [
+      "react",
+      "react-native"                  // ← ensures TS loads those type packages
+    ]
   },
   "include": [
     "**/*.ts",

@@ -19,6 +19,9 @@ import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
 import styles from './MyAccountScreen.styles';
 
+// Sentry for logging
+import * as Sentry from '@sentry/react-native';
+
 // react-native-iap imports
 import { Subscription } from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
@@ -32,7 +35,7 @@ interface LocalProfile {
   is_premium: boolean;
 }
 
-export function MyAccountScreen() {
+export function MyAccountScreen(): JSX.Element {
   const { theme, mode, toggleTheme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
   const {
@@ -68,16 +71,22 @@ export function MyAccountScreen() {
 
   /* ---------- Avatar picker & upload ---------- */
   const pickAvatar = async () => {
+    Sentry.captureMessage('Avatar pick start');
     if (!user) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      return Alert.alert('Permission required', 'You need to allow photo access.');
+      Alert.alert('Permission required', 'You need to allow photo access.');
+      Sentry.captureMessage('Avatar pick permission denied');
+      return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.5,
     });
-    if (result.canceled) return;
+    if (result.canceled) {
+      Sentry.captureMessage('Avatar pick canceled');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -104,11 +113,11 @@ export function MyAccountScreen() {
         .eq('id', user.id);
       if (updateErr) throw updateErr;
 
-      setLocalProfile((p) =>
-        p ? { ...p, avatar_url: urlData.publicUrl } : p
-      );
+      setLocalProfile(p => p ? { ...p, avatar_url: urlData.publicUrl } : p);
+      Sentry.captureMessage('Avatar uploaded and profile updated');
     } catch (e: any) {
       Alert.alert('Upload failed', e.message);
+      Sentry.captureException(e);
     } finally {
       setUploading(false);
     }
@@ -116,40 +125,48 @@ export function MyAccountScreen() {
 
   /* ---------- Save name ---------- */
   const handleSaveName = async () => {
+    Sentry.captureMessage('Save name start');
     if (!user || !localProfile) return;
     setSavingName(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ name: localProfile.name })
-      .eq('id', user.id)
-      .select()
-      .single();
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else if (data) {
-      setLocalProfile((p) => p ? { ...p, name: data.name } : p);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ name: localProfile.name })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setLocalProfile(p => p ? { ...p, name: data.name } : p);
+      Sentry.captureMessage('Name saved successfully');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+      Sentry.captureException(e);
+    } finally {
+      setSavingName(false);
     }
-    setSavingName(false);
   };
 
   /* ---------- Save radius ---------- */
   const handleSaveRadius = async () => {
+    Sentry.captureMessage('Save radius start');
     if (!user || !localProfile) return;
     setSavingRadius(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ notify_radius: localProfile.notifyRadius })
-      .eq('id', user.id)
-      .select()
-      .single();
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else if (data) {
-      setLocalProfile((p) =>
-        p ? { ...p, notifyRadius: data.notify_radius } : p
-      );
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ notify_radius: localProfile.notifyRadius })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setLocalProfile(p => p ? { ...p, notifyRadius: data.notify_radius } : p);
+      Sentry.captureMessage('Radius saved successfully');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+      Sentry.captureException(e);
+    } finally {
+      setSavingRadius(false);
     }
-    setSavingRadius(false);
   };
 
   /* ---------- In-App Purchase via react-native-iap ---------- */
@@ -157,34 +174,40 @@ export function MyAccountScreen() {
   const [plansLoading, setPlansLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
-  // Initialize IAP and load subscription products
   useEffect(() => {
     (async () => {
-      await initIAP();
+      Sentry.captureMessage('IAP initialization start');
       try {
+        await initIAP();
+        Sentry.captureMessage('IAP initialized');
         const subs = await fetchPlans();
         setPlans(subs);
+        Sentry.captureMessage(`Fetched ${subs.length} subscription plans`);
       } catch (e) {
-        console.error('Failed to load plans', e);
+        console.error('Failed to init or fetch plans', e);
+        Sentry.captureException(e);
       } finally {
         setPlansLoading(false);
+        Sentry.captureMessage('IAP initialization end');
       }
     })();
   }, []);
 
-  const handlePurchase = useCallback(
-    async (sku: string) => {
-      setPurchaseLoading(true);
-      try {
-        await purchasePremium(sku);
-      } catch (err: any) {
-        Alert.alert('Purchase Error', err.message);
-      } finally {
-        setPurchaseLoading(false);
-      }
-    },
-    []
-  );
+  const handlePurchase = useCallback(async (sku: string) => {
+    Sentry.captureMessage(`Purchase start for SKU: ${sku}`);
+    setPurchaseLoading(true);
+    try {
+      await purchasePremium(sku);
+      Sentry.captureMessage(`Purchase succeeded for SKU: ${sku}`);
+    } catch (err: any) {
+      Alert.alert('Purchase Error', err.message);
+      Sentry.captureException(err);
+      Sentry.captureMessage(`Purchase error for SKU: ${sku}`);
+    } finally {
+      setPurchaseLoading(false);
+      Sentry.captureMessage(`Purchase flow end for SKU: ${sku}`);
+    }
+  }, []);
 
   /* ---------- Render loading state ---------- */
   if (sessLoading || !localProfile) {
@@ -230,9 +253,7 @@ export function MyAccountScreen() {
       </TouchableOpacity>
 
       {/* Header */}
-      <ThemedText style={[styles.headerBase, headerTextStyle]}>
-        My Account
-      </ThemedText>
+      <ThemedText style={[styles.headerBase, headerTextStyle]}>My Account</ThemedText>
 
       {/* Dark Mode */}
       <View style={styles.field}>
@@ -262,8 +283,8 @@ export function MyAccountScreen() {
             },
           ]}
           value={localProfile.name}
-          onChangeText={(text) =>
-            setLocalProfile((p) => (p ? { ...p, name: text } : p))
+          onChangeText={text =>
+            setLocalProfile(p => (p ? { ...p, name: text } : p))
           }
         />
       </View>
@@ -289,18 +310,14 @@ export function MyAccountScreen() {
         >
           <Picker
             selectedValue={localProfile.notifyRadius}
-            onValueChange={(val) =>
-              setLocalProfile((p) => (p ? { ...p, notifyRadius: val } : p))
+            onValueChange={val =>
+              setLocalProfile(p => (p ? { ...p, notifyRadius: val } : p))
             }
             dropdownIconColor={colors.textSecondary}
             style={{ color: colors.text }}
           >
-            {radiusOptions.map((r) => (
-              <Picker.Item
-                key={r}
-                value={r}
-                label={r === 0 ? 'Off' : `${r} ft`}
-              />
+            {radiusOptions.map(r => (
+              <Picker.Item key={r} value={r} label={r === 0 ? 'Off' : `${r} ft`} />
             ))}
           </Picker>
         </View>
@@ -327,7 +344,7 @@ export function MyAccountScreen() {
             🎉 You’re Premium!
           </ThemedText>
         ) : (
-          plans.map((plan) => (
+          plans.map(plan => (
             <TouchableOpacity
               key={plan.productId}
               onPress={() => handlePurchase(plan.productId)}
@@ -349,7 +366,7 @@ export function MyAccountScreen() {
                     fontWeight: 'bold',
                   }}
                 >
-                  Subscribe {plan.title} {plan.description ? ` — ${plan.description}` : ''}
+                  Go Ad-Free
                 </ThemedText>
               )}
             </TouchableOpacity>
