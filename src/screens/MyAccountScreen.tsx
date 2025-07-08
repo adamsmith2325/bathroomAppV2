@@ -23,7 +23,13 @@ import styles from './MyAccountScreen.styles';
 import * as Sentry from '@sentry/react-native';
 
 // react-native-iap imports
-import { Subscription } from 'react-native-iap';
+import {
+  Subscription,
+  endConnection,
+  finishTransaction,
+  purchaseErrorListener,
+  purchaseUpdatedListener,
+} from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
 
 interface LocalProfile {
@@ -35,18 +41,12 @@ interface LocalProfile {
   is_premium: boolean;
 }
 
-export function MyAccountScreen(): JSX.Element {
+export function MyAccountScreen() {
   const { theme, mode, toggleTheme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
-  const {
-    user,
-    profile,
-    isPremium,
-    isLoading: sessLoading,
-    signOut,
-  } = useSession();
+  const { user, profile, isPremium, isLoading: sessLoading, signOut } = useSession();
 
-  // Local editable copy of profile
+  // Editable local copy of the profile
   const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null);
   useEffect(() => {
     if (profile && !localProfile) {
@@ -65,6 +65,11 @@ export function MyAccountScreen(): JSX.Element {
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [savingRadius, setSavingRadius] = useState(false);
+
+  // In-app purchase state
+  const [plans, setPlans] = useState<Subscription[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   // Radius options
   const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
@@ -169,12 +174,11 @@ export function MyAccountScreen(): JSX.Element {
     }
   };
 
-  /* ---------- In-App Purchase via react-native-iap ---------- */
-  const [plans, setPlans] = useState<Subscription[]>([]);
-  const [plansLoading, setPlansLoading] = useState(true);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
-
+  /* ---------- In-App Purchase setup & listeners ---------- */
   useEffect(() => {
+    let updateSub: any = null;
+    let errorSub: any = null;
+
     (async () => {
       Sentry.captureMessage('IAP initialization start');
       try {
@@ -190,22 +194,42 @@ export function MyAccountScreen(): JSX.Element {
         setPlansLoading(false);
         Sentry.captureMessage('IAP initialization end');
       }
+
+      updateSub = purchaseUpdatedListener(async purchase => {
+        Sentry.captureMessage('purchaseUpdatedListener fired');
+        try {
+          await finishTransaction({ purchase, isConsumable: false });
+          Sentry.captureMessage(`finishTransaction succeeded for ${purchase.productId}`);
+        } catch (ackErr) {
+          Sentry.captureException(ackErr);
+        }
+      });
+
+      errorSub = purchaseErrorListener(err => {
+        Sentry.captureMessage('purchaseErrorListener fired');
+        Sentry.captureException(err);
+        Alert.alert('Purchase failed', err.message);
+      });
     })();
+
+    return () => {
+      updateSub?.remove();
+      errorSub?.remove();
+      endConnection();
+    };
   }, []);
 
+  /* trigger a purchase */
   const handlePurchase = useCallback(async (sku: string) => {
-    Sentry.captureMessage(`Purchase start for SKU: ${sku}`);
+    Sentry.captureMessage(`requestSubscription for SKU: ${sku}`);
     setPurchaseLoading(true);
     try {
       await purchasePremium(sku);
-      Sentry.captureMessage(`Purchase succeeded for SKU: ${sku}`);
     } catch (err: any) {
       Alert.alert('Purchase Error', err.message);
       Sentry.captureException(err);
-      Sentry.captureMessage(`Purchase error for SKU: ${sku}`);
     } finally {
       setPurchaseLoading(false);
-      Sentry.captureMessage(`Purchase flow end for SKU: ${sku}`);
     }
   }, []);
 
@@ -238,14 +262,11 @@ export function MyAccountScreen(): JSX.Element {
         {localProfile.avatar_url ? (
           <Image
             source={{ uri: localProfile.avatar_url }}
-            style={[
-              styles.avatarBase,
-              {
-                width: spacing.md * 4,
-                height: spacing.md * 4,
-                borderRadius: spacing.md * 2,
-              },
-            ]}
+            style={[styles.avatarBase, {
+              width: spacing.md * 4,
+              height: spacing.md * 4,
+              borderRadius: spacing.md * 2,
+            }]}
           />
         ) : (
           <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surface }]} />
@@ -253,7 +274,9 @@ export function MyAccountScreen(): JSX.Element {
       </TouchableOpacity>
 
       {/* Header */}
-      <ThemedText style={[styles.headerBase, headerTextStyle]}>My Account</ThemedText>
+      <ThemedText style={[styles.headerBase, headerTextStyle]}>
+        My Account
+      </ThemedText>
 
       {/* Dark Mode */}
       <View style={styles.field}>
@@ -270,49 +293,35 @@ export function MyAccountScreen(): JSX.Element {
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Name</ThemedText>
         <TextInput
-          style={[
-            styles.inputBase,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.text,
-              borderRadius: borderRadius.md,
-              padding: spacing.sm,
-              flex: 1,
-              marginLeft: spacing.sm,
-            },
-          ]}
+          style={[styles.inputBase, {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            color: colors.text,
+            borderRadius: borderRadius.md,
+            padding: spacing.sm,
+            flex: 1,
+            marginLeft: spacing.sm,
+          }]}
           value={localProfile.name}
-          onChangeText={text =>
-            setLocalProfile(p => (p ? { ...p, name: text } : p))
-          }
+          onChangeText={text => setLocalProfile(p => p ? { ...p, name: text } : p)}
         />
       </View>
-      <Button
-        title="Save Name"
-        color={colors.primary}
-        onPress={handleSaveName}
-        disabled={savingName}
-      />
+      <Button title="Save Name" color={colors.primary} onPress={handleSaveName} disabled={savingName} />
 
       {/* Radius Picker */}
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Notify Radius</ThemedText>
-        <View
-          style={{
-            flex: 1,
-            marginLeft: spacing.sm,
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: borderRadius.md,
-          }}
-        >
+        <View style={{
+          flex: 1,
+          marginLeft: spacing.sm,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderWidth: 1,
+          borderRadius: borderRadius.md,
+        }}>
           <Picker
             selectedValue={localProfile.notifyRadius}
-            onValueChange={val =>
-              setLocalProfile(p => (p ? { ...p, notifyRadius: val } : p))
-            }
+            onValueChange={val => setLocalProfile(p => p ? { ...p, notifyRadius: val } : p)}
             dropdownIconColor={colors.textSecondary}
             style={{ color: colors.text }}
           >
@@ -322,12 +331,7 @@ export function MyAccountScreen(): JSX.Element {
           </Picker>
         </View>
       </View>
-      <Button
-        title="Save Radius"
-        color={colors.primary}
-        onPress={handleSaveRadius}
-        disabled={savingRadius}
-      />
+      <Button title="Save Radius" color={colors.primary} onPress={handleSaveRadius} disabled={savingRadius} />
 
       {/* Membership */}
       <View style={styles.field}>
@@ -335,12 +339,7 @@ export function MyAccountScreen(): JSX.Element {
         {plansLoading ? (
           <ActivityIndicator color={colors.primary} />
         ) : isPremium ? (
-          <ThemedText
-            style={[
-              labelTextStyle,
-              { color: colors.success, marginTop: spacing.sm },
-            ]}
-          >
+          <ThemedText style={[labelTextStyle, { color: colors.success, marginTop: spacing.sm }]}>
             🎉 You’re Premium!
           </ThemedText>
         ) : (
@@ -360,12 +359,7 @@ export function MyAccountScreen(): JSX.Element {
               {purchaseLoading ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
-                <ThemedText
-                  style={{
-                    color: colors.onPrimary,
-                    fontWeight: 'bold',
-                  }}
-                >
+                <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
                   Go Ad-Free
                 </ThemedText>
               )}
