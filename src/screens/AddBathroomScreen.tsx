@@ -5,8 +5,9 @@ import {
   Alert,
   Button,
   KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  TextInput,
+  TextInput
 } from 'react-native'
 import MapView, { LatLng, Marker } from 'react-native-maps'
 import { ThemedText, ThemedView } from '../components/Themed'
@@ -22,7 +23,7 @@ export function AddBathroomScreen() {
   const { colors, spacing } = theme
 
   const [marker, setMarker] = useState<LatLng>({
-    latitude: 87.6233,
+    latitude: -87.6233,
     longitude: 41.8827,
   })
   const [title, setTitle] = useState('')
@@ -70,10 +71,17 @@ export function AddBathroomScreen() {
   }
 
   return (
-
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoiding}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      /** tweak this if you have a header */
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
     <ThemedView style={styles.container}>
-      <KeyboardAvoidingView>
-      <ScrollView>
       <MapView
         style={styles.mapContainer}
         initialRegion={{
@@ -157,9 +165,9 @@ export function AddBathroomScreen() {
           />
         )}
       </ThemedView>
-      </ScrollView>
-      </KeyboardAvoidingView>
     </ThemedView>
+    </ScrollView>
+    </KeyboardAvoidingView>
     
   )
 }

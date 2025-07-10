@@ -9,9 +9,19 @@ export interface Styles {
   toggleText: TextStyle
   errorText: TextStyle
   buttonContainer: ViewStyle
+  keyboardAvoiding: ViewStyle
+  scrollContainer: ViewStyle
 }
 
 const styles = StyleSheet.create<Styles>({
+    // take up full screen
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  // let inner content grow and center when no keyboard
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

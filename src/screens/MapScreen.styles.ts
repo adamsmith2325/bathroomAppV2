@@ -3,6 +3,8 @@ import { StyleSheet, TextStyle, ViewStyle } from 'react-native'
 
 export interface Styles {
   container: ViewStyle
+  keyboardAvoiding: ViewStyle
+  scrollContainer: ViewStyle
   map: ViewStyle
   loadingText: TextStyle
   modalOverlay: ViewStyle
@@ -35,6 +37,14 @@ export interface Styles {
 }
 
 const staticStyles = StyleSheet.create({
+    // take up full screen
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  // let inner content grow and center when no keyboard
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: { flex: 1 },
   map: { flex: 1 },
   loadingText: { flex: 1, textAlign: 'center', marginTop: 100 },
@@ -51,6 +61,8 @@ const styles: Styles = {
   modalOverlay: staticStyles.modalOverlay,
   commentListContainer: staticStyles.commentListContainer,
   buttonSpacing: staticStyles.buttonSpacing,
+  keyboardAvoiding: staticStyles.keyboardAvoiding,
+  scrollContainer: staticStyles.scrollContainer,
 
   // dynamic
   modalContainer: (padding) => ({

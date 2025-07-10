@@ -7,9 +7,19 @@ export interface Styles {
   form: ViewStyle
   input: TextStyle
   buttonContainer: ViewStyle
+  keyboardAvoiding: ViewStyle,
+  scrollContainer: ViewStyle
 }
 
 export default StyleSheet.create<Styles>({
+  // take up full screen
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  // let inner content grow and center when no keyboard
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
   },

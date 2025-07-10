@@ -249,12 +249,20 @@ export default function MapScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-
+        <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        /** tweak this if you have a header */
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+        >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
         <ThemedView
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
         >
-        <KeyboardAvoidingView>
-        <ScrollView>
+
           <ThemedView
             style={[styles.modalContainer(spacing.md), { backgroundColor: colors.background }]}
           >
@@ -339,9 +347,9 @@ export default function MapScreen() {
               </>
             )}
           </ThemedView>
+        </ThemedView>
           </ScrollView>
         </KeyboardAvoidingView>
-        </ThemedView>
       </Modal>
     </ThemedView>
   )

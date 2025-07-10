@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Platform,
   ScrollView,
   TextInput,
   TextStyle,
@@ -55,14 +56,22 @@ export default function AuthScreen() {
   }
 
   return (
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoiding}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      /** tweak this if you have a header */
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
     <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={logo} style={styles.logo} />
 
       <ThemedText style={[styles.title, headerTextStyle]}>
         {isSigningUp ? 'Create Account' : 'Welcome Back'}
       </ThemedText>
-      <KeyboardAvoidingView>
-      <ScrollView>
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         {error && (
           <ThemedText
@@ -144,8 +153,6 @@ export default function AuthScreen() {
           </TouchableOpacity>
         )}
       </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
 
       <TouchableOpacity onPress={() => setIsSigningUp((p) => !p)}>
         <ThemedText
@@ -165,5 +172,7 @@ export default function AuthScreen() {
 
       </TouchableOpacity>
     </ThemedView>
+    </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

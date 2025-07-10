@@ -9,9 +9,19 @@ interface Styles {
   headerBase: TextStyle
   field: ViewStyle
   inputBase: TextStyle
+  keyboardAvoiding: ViewStyle
+  scrollContainer: ViewStyle
 }
 
 export default StyleSheet.create<Styles>({
+  // take up full screen
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  // let inner content grow and center when no keyboard
+  scrollContainer: {
+    flexGrow: 1,
+  },
   // center everything vertically + standard padding:
   container: {
     flex: 1,
