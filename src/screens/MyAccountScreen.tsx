@@ -7,6 +7,7 @@ import {
   Alert,
   Button,
   Image,
+  KeyboardAvoidingView,
   Switch,
   TextInput,
   TextStyle,
@@ -75,58 +76,74 @@ export function MyAccountScreen() {
   const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
 
   /* ---------- Avatar picker & upload ---------- */
-  const pickAvatar = async () => {
-    Sentry.captureMessage('Avatar pick start');
-    if (!user) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'You need to allow photo access.');
-      Sentry.captureMessage('Avatar pick permission denied');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
-    });
-    if (result.canceled) {
-      Sentry.captureMessage('Avatar pick canceled');
-      return;
-    }
+const pickAvatar = async () => {
+  if (!user) return;
 
+  // 1) ask permission & pick
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'You need to allow photo access.');
+    return;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 0.7,            // bump quality if you want
+    base64: false,
+  });
+  if (result.canceled) return;
+
+  try {
     setUploading(true);
-    try {
-      const uri = result.assets[0].uri;
-      const resp = await fetch(uri);
-      const blob = await resp.blob();
-      const ext = uri.split('.').pop()!;
-      const filename = `${user.id}.${ext}`;
+    const uri = result.assets[0].uri;
 
-      const { error: uploadErr } = await supabase
-        .storage
-        .from('avatars')
-        .upload(filename, blob, { upsert: true });
-      if (uploadErr) throw uploadErr;
+    // 2) fetch as blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
 
-      const { data: urlData } = supabase
-        .storage
-        .from('avatars')
-        .getPublicUrl(filename);
-
-      const { error: updateErr } = await supabase
-        .from('profiles')
-        .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user.id);
-      if (updateErr) throw updateErr;
-
-      setLocalProfile(p => p ? { ...p, avatar_url: urlData.publicUrl } : p);
-      Sentry.captureMessage('Avatar uploaded and profile updated');
-    } catch (e: any) {
-      Alert.alert('Upload failed', e.message);
-      Sentry.captureException(e);
-    } finally {
-      setUploading(false);
+    // sanity‐check
+    if (blob.size === 0) {
+      throw new Error('Picked image is empty.');
     }
-  };
+
+    // derive an extension and mime
+    const mime = blob.type;                    // e.g. 'image/jpeg'
+    const ext  = mime.split('/')[1];           // e.g. 'jpeg'
+    const filename = `${user.id}.${ext}`;
+
+    // 3) upload with contentType
+    const { error: uploadErr } = await supabase
+      .storage
+      .from('avatars')
+      .upload(filename, blob, {
+        upsert: true,
+        contentType: mime,
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    // 4) grab the public URL and write to your profile row
+    const { data: urlData } = supabase
+      .storage
+      .from('avatars')
+      .getPublicUrl(filename);
+
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update({ avatar_url: urlData.publicUrl })
+      .eq('id', user.id);
+
+    if (updateErr) throw updateErr;
+
+    // 5) update local state so your UI re-renders immediately
+    setLocalProfile(p => p ? { ...p, avatar_url: urlData.publicUrl } : p);
+
+  } catch (e: any) {
+    console.error('Avatar upload error:', e);
+    Alert.alert('Upload failed', e.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   /* ---------- Save name ---------- */
   const handleSaveName = async () => {
@@ -256,6 +273,7 @@ export function MyAccountScreen() {
   };
 
   return (
+    <KeyboardAvoidingView>
     <ThemedView style={styles.container}>
       {/* Avatar */}
       <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
@@ -322,7 +340,7 @@ export function MyAccountScreen() {
           <Picker
             selectedValue={localProfile.notifyRadius}
             onValueChange={val => setLocalProfile(p => p ? { ...p, notifyRadius: val } : p)}
-            dropdownIconColor={colors.textSecondary}
+            dropdownIconColor={colors.text}
             style={{ color: colors.text }}
           >
             {radiusOptions.map(r => (
@@ -373,5 +391,6 @@ export function MyAccountScreen() {
         <Button title="Sign Out" color={colors.error} onPress={signOut} />
       </View>
     </ThemedView>
+    </KeyboardAvoidingView>
   );
 }

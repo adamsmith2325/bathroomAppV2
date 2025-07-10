@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Button,
+  KeyboardAvoidingView,
   TextInput,
 } from 'react-native'
 import MapView, { LatLng, Marker } from 'react-native-maps'
@@ -12,13 +13,16 @@ import { supabase } from '../lib/supabase'
 import { useTheme } from '../lib/themeContext'
 import styles from './AddBathroomScreen.styles'
 
+// Sentry for logging
+import * as Sentry from '@sentry/react-native'
+
 export function AddBathroomScreen() {
   const { theme } = useTheme()
   const { colors, spacing } = theme
 
   const [marker, setMarker] = useState<LatLng>({
-    latitude: 37.78825,
-    longitude: -122.4324,
+    latitude: 87.6233,
+    longitude: 41.8827,
   })
   const [title, setTitle] = useState('')
   const [entryCode, setEntryCode] = useState('')
@@ -54,6 +58,7 @@ export function AddBathroomScreen() {
     setSubmitting(false)
     if (error) {
       console.error(error)
+      Sentry.captureMessage(error.message);
       Alert.alert('Error', 'Failed to add bathroom.')
     } else {
       Alert.alert('Success', 'Bathroom added!')
@@ -81,7 +86,7 @@ export function AddBathroomScreen() {
           pinColor={colors.primary}
         />
       </MapView>
-
+      <KeyboardAvoidingView>
       <ThemedView style={styles.form}>
         <ThemedText style={{ marginBottom: spacing.sm, fontWeight: '600' }}>
           New Bathroom Location
@@ -148,6 +153,8 @@ export function AddBathroomScreen() {
           />
         )}
       </ThemedView>
+      </KeyboardAvoidingView>
     </ThemedView>
+    
   )
 }

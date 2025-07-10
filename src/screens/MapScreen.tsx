@@ -12,6 +12,7 @@ import {
   Alert,
   Button,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   TextInput,
@@ -247,6 +248,7 @@ export default function MapScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
+        <KeyboardAvoidingView>
         <ThemedView
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
         >
@@ -335,6 +337,7 @@ export default function MapScreen() {
             )}
           </ThemedView>
         </ThemedView>
+        </KeyboardAvoidingView>
       </Modal>
     </ThemedView>
   )

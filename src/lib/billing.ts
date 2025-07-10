@@ -1,12 +1,12 @@
 // src/lib/billing.ts
 import {
-    Subscription,
-    getSubscriptions,
-    initConnection,
-    requestSubscription
+  Subscription,
+  getSubscriptions,
+  initConnection,
+  requestSubscription
 } from 'react-native-iap';
 
-const SUBSCRIPTION_IDS = ['adFreeSubBathroomInApp']; // ← your actual product IDs
+const SUBSCRIPTION_IDS = ['adFreeSubBathroomApp']; // ← your actual product IDs
 
 /**
  * Initialize the IAP module. Call this once on app start.
