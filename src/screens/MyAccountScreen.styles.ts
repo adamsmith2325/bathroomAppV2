@@ -26,6 +26,7 @@ export default StyleSheet.create<Styles>({
   container: {
     flex: 1,
     padding: 24,
+    paddingTop: 20,
     justifyContent: 'center',
   },
   loading: {

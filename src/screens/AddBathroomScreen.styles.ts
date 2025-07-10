@@ -1,6 +1,7 @@
 // src/screens/AddBathroomScreen.styles.ts
 import { StyleSheet, TextStyle, ViewStyle } from 'react-native'
 
+
 export interface Styles {
   container: ViewStyle
   mapContainer: ViewStyle
@@ -12,6 +13,7 @@ export interface Styles {
 }
 
 export default StyleSheet.create<Styles>({
+  
   // take up full screen
   keyboardAvoiding: {
     flex: 1,
@@ -22,6 +24,7 @@ export default StyleSheet.create<Styles>({
   },
   container: {
     flex: 1,
+    paddingTop: 16,
   },
   mapContainer: {
     flex: 1,

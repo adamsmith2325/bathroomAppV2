@@ -68,6 +68,7 @@ const styles: Styles = {
   modalContainer: (padding) => ({
     flex: 1,
     padding,
+    paddingTop: 20,
   }),
   card: (radius, padding) => ({
     borderRadius: radius,

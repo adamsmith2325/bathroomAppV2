@@ -27,6 +27,9 @@ import { useTheme } from '../lib/themeContext'
 import { useSession } from '../lib/useSession'
 import styles from './MapScreen.styles'
 
+// Sentry for logging
+import * as Sentry from '@sentry/react-native'
+
 interface Bathroom {
   id: string
   title: string
@@ -156,18 +159,45 @@ export default function MapScreen() {
     fetchComments(b.id)
     fetchUsageCount(b.id)
   }
-  const handleCommentSubmit = async () => {
-    if (!newComment.trim() || !selectedBathroom) return
-    const { error } = await supabase.from('comments').insert({
-      bathroom_id: selectedBathroom.id,
-      user_id: user?.id,
-      text: newComment.trim(),
-    })
-    if (!error) {
-      setNewComment('')
-      fetchComments(selectedBathroom.id)
+
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleCommentSubmit() {
+    if (!newComment.trim()) {
+      return Alert.alert('Please enter a comment first.');
+    }
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          bathroom_id: selectedBathroom?.id,
+          text: newComment.trim(),
+          // any other fields: user_id, created_at, etc.
+        })
+        .single();
+
+      if (error) {
+        // throw so it hits our catch block
+        throw error;
+      }
+
+      // success! reset input, refresh your local list, etc.
+      setNewComment('');
+      // e.g. fetchComments(); or append to state
+    } catch (err: any) {
+      // log to Sentry
+      Sentry.captureException(err);
+
+      // also surface to the user
+      console.error('Failed to submit comment:', err);
+      Alert.alert('Error', err.message ?? 'Unable to submit comment');
+    } finally {
+      setSubmitting(false);
     }
   }
+
   const handleMarkUsed = async () => {
     if (!selectedBathroom || !user) return
     const { error } = await supabase.from('bathroom_usage').insert({
@@ -259,6 +289,7 @@ export default function MapScreen() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
+          
         <ThemedView
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
         >
