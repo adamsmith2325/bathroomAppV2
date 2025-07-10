@@ -8,6 +8,7 @@ import {
   Button,
   Image,
   KeyboardAvoidingView,
+  ScrollView,
   Switch,
   TextInput,
   TextStyle,
@@ -274,6 +275,7 @@ const pickAvatar = async () => {
 
   return (
     <KeyboardAvoidingView>
+    <ScrollView>
     <ThemedView style={styles.container}>
       {/* Avatar */}
       <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
@@ -391,6 +393,7 @@ const pickAvatar = async () => {
         <Button title="Sign Out" color={colors.error} onPress={signOut} />
       </View>
     </ThemedView>
+    </ScrollView>
     </KeyboardAvoidingView>
   );
 }

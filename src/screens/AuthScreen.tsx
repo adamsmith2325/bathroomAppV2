@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  ScrollView,
   TextInput,
   TextStyle,
   TouchableOpacity,
@@ -55,6 +56,7 @@ export default function AuthScreen() {
 
   return (
     <KeyboardAvoidingView>
+      <ScrollView>
     <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={logo} style={styles.logo} />
 
@@ -161,6 +163,7 @@ export default function AuthScreen() {
         </ThemedText>
       </TouchableOpacity>
     </ThemedView>
+    </ScrollView>
     </KeyboardAvoidingView>
   )
 }

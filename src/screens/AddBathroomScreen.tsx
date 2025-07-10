@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   KeyboardAvoidingView,
+  ScrollView,
   TextInput,
 } from 'react-native'
 import MapView, { LatLng, Marker } from 'react-native-maps'
@@ -87,6 +88,7 @@ export function AddBathroomScreen() {
         />
       </MapView>
       <KeyboardAvoidingView>
+      <ScrollView>
       <ThemedView style={styles.form}>
         <ThemedText style={{ marginBottom: spacing.sm, fontWeight: '600' }}>
           New Bathroom Location
@@ -153,6 +155,7 @@ export function AddBathroomScreen() {
           />
         )}
       </ThemedView>
+      </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
     

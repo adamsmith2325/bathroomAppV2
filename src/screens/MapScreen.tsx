@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   View,
@@ -249,6 +250,7 @@ export default function MapScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView>
+        <ScrollView>
         <ThemedView
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
         >
@@ -337,6 +339,7 @@ export default function MapScreen() {
             )}
           </ThemedView>
         </ThemedView>
+        </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </ThemedView>
