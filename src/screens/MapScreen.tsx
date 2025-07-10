@@ -249,11 +249,12 @@ export default function MapScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView>
-        <ScrollView>
+
         <ThemedView
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
         >
+        <KeyboardAvoidingView>
+        <ScrollView>
           <ThemedView
             style={[styles.modalContainer(spacing.md), { backgroundColor: colors.background }]}
           >
@@ -338,9 +339,9 @@ export default function MapScreen() {
               </>
             )}
           </ThemedView>
-        </ThemedView>
-        </ScrollView>
+          </ScrollView>
         </KeyboardAvoidingView>
+        </ThemedView>
       </Modal>
     </ThemedView>
   )

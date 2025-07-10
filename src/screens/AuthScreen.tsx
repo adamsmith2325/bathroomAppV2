@@ -55,15 +55,14 @@ export default function AuthScreen() {
   }
 
   return (
-    <KeyboardAvoidingView>
-      <ScrollView>
     <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={logo} style={styles.logo} />
 
       <ThemedText style={[styles.title, headerTextStyle]}>
         {isSigningUp ? 'Create Account' : 'Welcome Back'}
       </ThemedText>
-
+      <KeyboardAvoidingView>
+      <ScrollView>
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         {error && (
           <ThemedText
@@ -145,6 +144,8 @@ export default function AuthScreen() {
           </TouchableOpacity>
         )}
       </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
 
       <TouchableOpacity onPress={() => setIsSigningUp((p) => !p)}>
         <ThemedText
@@ -161,9 +162,8 @@ export default function AuthScreen() {
             ? 'Already have an account? Sign In'
             : "Don't have an account? Sign Up"}
         </ThemedText>
+
       </TouchableOpacity>
     </ThemedView>
-    </ScrollView>
-    </KeyboardAvoidingView>
   )
 }

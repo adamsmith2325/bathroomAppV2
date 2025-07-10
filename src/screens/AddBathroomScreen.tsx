@@ -70,7 +70,10 @@ export function AddBathroomScreen() {
   }
 
   return (
+
     <ThemedView style={styles.container}>
+      <KeyboardAvoidingView>
+      <ScrollView>
       <MapView
         style={styles.mapContainer}
         initialRegion={{
@@ -87,8 +90,7 @@ export function AddBathroomScreen() {
           pinColor={colors.primary}
         />
       </MapView>
-      <KeyboardAvoidingView>
-      <ScrollView>
+
       <ThemedView style={styles.form}>
         <ThemedText style={{ marginBottom: spacing.sm, fontWeight: '600' }}>
           New Bathroom Location

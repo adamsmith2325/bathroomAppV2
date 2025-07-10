@@ -274,8 +274,6 @@ const pickAvatar = async () => {
   };
 
   return (
-    <KeyboardAvoidingView>
-    <ScrollView>
     <ThemedView style={styles.container}>
       {/* Avatar */}
       <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
@@ -310,6 +308,8 @@ const pickAvatar = async () => {
       </View>
 
       {/* Name */}
+      <KeyboardAvoidingView>
+      <ScrollView>
       <View style={styles.field}>
         <ThemedText style={labelTextStyle}>Name</ThemedText>
         <TextInput
@@ -326,6 +326,8 @@ const pickAvatar = async () => {
           onChangeText={text => setLocalProfile(p => p ? { ...p, name: text } : p)}
         />
       </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
       <Button title="Save Name" color={colors.primary} onPress={handleSaveName} disabled={savingName} />
 
       {/* Radius Picker */}
@@ -393,7 +395,5 @@ const pickAvatar = async () => {
         <Button title="Sign Out" color={colors.error} onPress={signOut} />
       </View>
     </ThemedView>
-    </ScrollView>
-    </KeyboardAvoidingView>
   );
 }
