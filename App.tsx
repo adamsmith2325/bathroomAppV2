@@ -1,17 +1,17 @@
 // App.tsx
 import { NavigationContainer } from '@react-navigation/native'
+import * as Sentry from '@sentry/react-native'
 import * as Location from 'expo-location'
 import * as Notifications from 'expo-notifications'
 import React, { useEffect } from 'react'
 import { LogBox, Platform } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
 import { supabase } from './src/lib/supabase'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
 import AuthScreen from './src/screens/AuthScreen'
-
-import * as Sentry from '@sentry/react-native'
 
 
 
@@ -69,12 +69,14 @@ function Root() {
 
 export default Sentry.wrap(function App() {
   return (
-    <SessionProvider>
-      <ThemeProvider>
-        <GeofenceRegistrar />
-        <Root />
-      </ThemeProvider>
-    </SessionProvider>
+    <SafeAreaProvider>
+      <SessionProvider>
+        <ThemeProvider>
+          <GeofenceRegistrar />
+          <Root />
+        </ThemeProvider>
+      </SessionProvider>
+    </SafeAreaProvider>
   )
 });
 
