@@ -23,8 +23,8 @@ export function AddBathroomScreen() {
   const { colors, spacing } = theme
 
   const [marker, setMarker] = useState<LatLng>({
-    latitude: -87.6233,
-    longitude: 41.8827,
+    latitude: -41.8827,
+    longitude: 87.6233,
   })
   const [title, setTitle] = useState('')
   const [entryCode, setEntryCode] = useState('')
