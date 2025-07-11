@@ -3,6 +3,11 @@ import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
+import {
+  BannerAd,
+  BannerAdSize,
+  TestIds,
+} from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 
 import { ThemedText, ThemedView } from '../components/Themed';
@@ -216,7 +221,10 @@ export default function MapScreen() {
           pinColor={colors.primary}
         />
       </MapView>
-
+      <BannerAd
+        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-xxx/yyy'}
+        size={BannerAdSize.FULL_BANNER}
+      />
       {/* DETAILS MODAL */}
       {selectedBathroom && (
         <BathroomDetailsModal
