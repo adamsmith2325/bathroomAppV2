@@ -222,7 +222,7 @@ export default function MapScreen() {
         />
       </MapView>
       <BannerAd
-        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-xxx/yyy'}
+        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-5901242452853695/3188072947'}
         size={BannerAdSize.FULL_BANNER}
       />
       {/* DETAILS MODAL */}
