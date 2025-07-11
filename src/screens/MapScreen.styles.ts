@@ -8,6 +8,7 @@ export interface Styles {
   map: ViewStyle
   loadingText: TextStyle
   modalOverlay: ViewStyle
+  adCOntainer: ViewStyle
   modalContainer: (padding: number) => ViewStyle
   card: (radius: number, padding: number) => ViewStyle
   headerText: (
@@ -51,10 +52,18 @@ const staticStyles = StyleSheet.create({
   modalOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
   commentListContainer: { maxHeight: 200, marginBottom: 16 },
   buttonSpacing: { marginTop: 12 },
+  adContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
 })
 
 const styles: Styles = {
   // static
+  adCOntainer: staticStyles.adContainer,
   container: staticStyles.container,
   map: staticStyles.map,
   loadingText: staticStyles.loadingText,
@@ -112,6 +121,7 @@ const styles: Styles = {
     color,
     marginTop: 20,
   }),
+
 }
 
 export default styles

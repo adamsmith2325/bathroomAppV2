@@ -5,8 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import {
   BannerAd,
-  BannerAdSize,
-  TestIds,
+  BannerAdSize
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -36,7 +35,7 @@ export default function MapScreen() {
   const [newComment, setNewComment] = useState('');
 
   const [isFav, setIsFav] = useState(false);
-
+  const { profile } = useSession();
   // 1) Get user location
   useEffect(() => {
     (async () => {
@@ -193,6 +192,8 @@ export default function MapScreen() {
     );
   }
 
+ 
+
   return (
     <ThemedView style={styles.container}>
       <MapView
@@ -221,10 +222,6 @@ export default function MapScreen() {
           pinColor={colors.primary}
         />
       </MapView>
-      <BannerAd
-        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-5901242452853695/3188072947'}
-        size={BannerAdSize.FULL_BANNER}
-      />
       {/* DETAILS MODAL */}
       {selectedBathroom && (
         <BathroomDetailsModal
@@ -243,6 +240,17 @@ export default function MapScreen() {
           onClose={() => setModalVisible(false)}
         />
       )}
+        {/*Ad Container */}
+         {!profile?.is_premium && (
+          <ThemedView style={styles.adCOntainer}>
+              <BannerAd
+                unitId={Platform.OS === 'ios'
+                ? "ca-app-pub-5901242452853695/3188072947"! : "ca-app-pub-5901242452853695/4501154615"}
+                size={BannerAdSize.FULL_BANNER}
+              />
+              </ThemedView>
+      )}
     </ThemedView>
+    
   );
 }
