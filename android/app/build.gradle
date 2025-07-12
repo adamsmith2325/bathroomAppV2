@@ -89,7 +89,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.prismixlabs.bathroomappv2'
+    namespace "com.bathroomappv2"
     defaultConfig {
         applicationId 'com.prismixlabs.bathroomappv2'
         minSdkVersion rootProject.ext.minSdkVersion
