@@ -249,6 +249,7 @@ const pickAvatar = async () => {
       Sentry.captureException(err);
     } finally {
       setPurchaseLoading(false);
+      setLocalProfile(p => p ? { ...p, is_premium: true } : p);
     }
   }, []);
 

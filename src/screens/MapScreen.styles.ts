@@ -8,7 +8,7 @@ export interface Styles {
   map: ViewStyle
   loadingText: TextStyle
   modalOverlay: ViewStyle
-  adCOntainer: ViewStyle
+  adContainer: ViewStyle
   modalContainer: (padding: number) => ViewStyle
   card: (radius: number, padding: number) => ViewStyle
   headerText: (
@@ -63,7 +63,7 @@ const staticStyles = StyleSheet.create({
 
 const styles: Styles = {
   // static
-  adCOntainer: staticStyles.adContainer,
+  adContainer: staticStyles.adContainer,
   container: staticStyles.container,
   map: staticStyles.map,
   loadingText: staticStyles.loadingText,

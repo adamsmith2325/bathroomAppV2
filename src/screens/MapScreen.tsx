@@ -2,7 +2,7 @@
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, View } from 'react-native';
 import {
   BannerAd,
   BannerAdSize
@@ -242,13 +242,16 @@ export default function MapScreen() {
       )}
         {/*Ad Container */}
          {!profile?.is_premium && (
-          <ThemedView style={styles.adCOntainer}>
-              <BannerAd
-                unitId={Platform.OS === 'ios'
-                ? "ca-app-pub-5901242452853695/3188072947"! : "ca-app-pub-5901242452853695/4501154615"}
-                size={BannerAdSize.FULL_BANNER}
-              />
-              </ThemedView>
+          <View style={styles.adContainer}>
+            <BannerAd
+              unitId={
+                Platform.OS === "ios"
+                  ? "ca-app-pub-5901242452853695/3188072947"
+                  : "ca-app-pub-5901242452853695/4501154615"
+              }
+              size={BannerAdSize.FULL_BANNER}
+            />
+          </View>
       )}
     </ThemedView>
     
