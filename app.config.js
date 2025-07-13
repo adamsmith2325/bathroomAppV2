@@ -9,7 +9,7 @@ export default {
   //   ...config,
   expo: {
     // ...config.expo,
-    name: 'bathroomAppV2',
+    name: 'Public Restroom Finder',
     slug: 'bathroomAppV2',
     version: '1.0.0',
     orientation: 'portrait',
