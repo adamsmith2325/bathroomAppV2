@@ -12,8 +12,16 @@ import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
 import AuthScreen from './src/screens/AuthScreen'
+import { MobileAds } from 'react-native-google-mobile-ads';
 
-
+MobileAds()
+  .initialize()
+  .then(adapterStatuses => {
+    console.log('✅ Mobile Ads initialized:', adapterStatuses);
+  })
+  .catch(err => {
+    console.error('❌ Mobile Ads failed to initialize:', err);
+  });
 
 Sentry.init({
   dsn: 'https://10c0e6ed16a7f81729cf942aa156b4b9@o4509606265618432.ingest.us.sentry.io/4509606267781120',
