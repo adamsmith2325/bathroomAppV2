@@ -361,6 +361,7 @@ export function MyAccountScreen() {
             }}>
               <Picker
                 selectedValue={localProfile.notifyRadius}
+                itemStyle={{ color: colors.text }}
                 onValueChange={val =>
                   setLocalProfile(p => p ? { ...p, notifyRadius: val } : p)
                 }
