@@ -5,6 +5,7 @@ import * as Location from 'expo-location'
 import * as Notifications from 'expo-notifications'
 import React, { useEffect } from 'react'
 import { LogBox, Platform } from 'react-native'
+import { MobileAds } from 'react-native-google-mobile-ads'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
 import { supabase } from './src/lib/supabase'
@@ -12,16 +13,7 @@ import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
 import { MainTabs } from './src/navigation/BottomTabNavigator'
 import AuthScreen from './src/screens/AuthScreen'
-import { MobileAds } from 'react-native-google-mobile-ads';
 
-MobileAds()
-  .initialize()
-  .then(adapterStatuses => {
-    console.log('✅ Mobile Ads initialized:', adapterStatuses);
-  })
-  .catch(err => {
-    console.error('❌ Mobile Ads failed to initialize:', err);
-  });
 
 Sentry.init({
   dsn: 'https://10c0e6ed16a7f81729cf942aa156b4b9@o4509606265618432.ingest.us.sentry.io/4509606267781120',
@@ -38,6 +30,19 @@ Sentry.init({
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 });
+
+
+MobileAds()
+  .initialize()
+  .then(adapterStatuses => {
+    console.log('✅ Mobile Ads initialized:', adapterStatuses);
+    Sentry.captureMessage("✅ Mobile Ads initialized");
+    
+  })
+  .catch(err => {
+    console.error('❌ Mobile Ads failed to initialize:', err);
+    Sentry.captureMessage("❌ Mobile Ads failed to initialize:" + err);
+  });
 
 // silences irrelevant RN warnings in your dashboard
 LogBox.ignoreLogs(['Setting a timer']);
