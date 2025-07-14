@@ -55,8 +55,8 @@ const staticStyles = StyleSheet.create({
   adContainer: {
     position: 'absolute',
     bottom: 0,             // float at the bottom
-    left: 0,
-    right: 0,
+    left: 10,
+    right: 10,
     alignItems: 'center',
     backgroundColor: 'transparent',
     paddingVertical: 4,
