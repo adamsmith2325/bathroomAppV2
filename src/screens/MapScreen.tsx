@@ -6,7 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import {
   BannerAd,
-  BannerAdSize
+  BannerAdSize,
+  TestIds
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 import { recordEvent } from '../lib/reviewManager';
