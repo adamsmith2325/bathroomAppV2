@@ -6,10 +6,10 @@ import { Alert, Platform, View } from 'react-native';
 import {
   BannerAd,
   BannerAdSize,
-  TestIds,
-  MobileAds
+  TestIds
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
+import { recordEvent } from '../lib/reviewManager';
 
 import { ThemedText, ThemedView } from '../components/Themed';
 import { supabase } from '../lib/supabase';
@@ -73,6 +73,7 @@ export default function MapScreen() {
     await fetchUsageCount(bathroom.id);
     await fetchComments(bathroom.id);
     await fetchFavoriteStatus(bathroom.id);
+    recordEvent('viewBathroom').catch(console.warn);
   };
 
   // 4) Fetch usage count
@@ -148,6 +149,7 @@ export default function MapScreen() {
       user_id: user.id,
     });
     await fetchUsageCount(selectedBathroom.id);
+    recordEvent('markUsed').catch(console.warn);
     Alert.alert('👍', 'Thanks for marking this bathroom as used!');
   };
 

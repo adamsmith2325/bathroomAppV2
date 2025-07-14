@@ -14,6 +14,7 @@ import { ThemedText, ThemedView } from '../components/Themed'
 import { supabase } from '../lib/supabase'
 import { useTheme } from '../lib/themeContext'
 import styles from './AddBathroomScreen.styles'
+import { recordEvent } from '../lib/reviewManager';
 
 // Sentry for logging
 import * as Sentry from '@sentry/react-native'
@@ -67,6 +68,7 @@ export function AddBathroomScreen() {
       setTitle('')
       setEntryCode('')
       setInstructions('')
+      recordEvent('addBathroom').catch(console.warn);
     }
   }
 
