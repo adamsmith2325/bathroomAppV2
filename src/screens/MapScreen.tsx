@@ -1,4 +1,5 @@
 // src/screens/MapScreen.tsx
+import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -255,6 +256,8 @@ export default function MapScreen() {
                   //: "ca-app-pub-5901242452853695/4501154615"
               }
               size={BannerAdSize.FULL_BANNER}
+              onAdLoaded={() => Sentry.captureMessage("Banner Loaded")}
+              onAdFailedToLoad={err => Sentry.captureMessage(err.message)}
             />
           </View>
       )}

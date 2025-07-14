@@ -53,12 +53,13 @@ const staticStyles = StyleSheet.create({
   commentListContainer: { maxHeight: 200, marginBottom: 16 },
   buttonSpacing: { marginTop: 12 },
   adContainer: {
-    position: "absolute",
-    bottom: 0,
+    position: 'absolute',
+    bottom: 0,             // float at the bottom
     left: 0,
     right: 0,
-    alignItems: "center",
-    paddingBottom: 8,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
   },
 })
 
