@@ -385,42 +385,31 @@ export function MyAccountScreen() {
             disabled={savingRadius}
           />
 
-          {/* Membership */}
-          <View style={styles.field}>
-            <ThemedText style={labelTextStyle}>Membership</ThemedText>
-            {plansLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : localProfile.is_premium ? (
-              <ThemedText
-                style={[labelTextStyle, { color: colors.success, marginTop: spacing.sm }]}
-              >
-                🎉 You’re Premium!
+        {/* Membership */}
+        <View style={styles.field}>
+          <ThemedText style={labelTextStyle}>Membership</ThemedText>
+          {localProfile.is_premium ? (
+            <ThemedText
+              style={[labelTextStyle, { color: colors.success, marginTop: spacing.sm }]}>
+              🎉 You’re Premium!
+            </ThemedText>
+          ) : (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Premium')}
+              style={{
+                backgroundColor: colors.accent,
+                padding: spacing.sm,
+                borderRadius: borderRadius.md,
+                alignItems: 'center',
+                marginTop: spacing.sm,
+              }}>
+              <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
+                View Premium Options
               </ThemedText>
-            ) : (
-              plans.map(plan => (
-                <TouchableOpacity
-                  key={plan.productId}
-                  onPress={() => handlePurchase(plan.productId)}
-                  disabled={purchaseLoading}
-                  style={{
-                    backgroundColor: colors.accent,
-                    padding: spacing.sm,
-                    borderRadius: borderRadius.md,
-                    alignItems: 'center',
-                    marginTop: spacing.sm,
-                  }}
-                >
-                  {purchaseLoading ? (
-                    <ActivityIndicator color={colors.onPrimary} />
-                  ) : (
-                    <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
-                      Go Ad-Free
-                    </ThemedText>
-                  )}
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
 
           {/* Sign Out */}
           <View style={{ marginTop: spacing.lg }}>
