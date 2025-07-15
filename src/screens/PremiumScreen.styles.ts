@@ -1,48 +1,60 @@
-import { StyleSheet, ViewStyle } from 'react-native'
+// src/screens/PremiumScreen.styles.ts
+import { StyleSheet } from 'react-native';
+import type { Theme } from '../lib/themeContext'; // adjust import if you have a Theme type
 
-interface Styles {
-  container: ViewStyle
-  container2: ViewStyle
-  loading: ViewStyle
-  card: ViewStyle
-  cardLeft: ViewStyle
-  cardBody: ViewStyle
-  cardRight: ViewStyle
-  emptyContainer: ViewStyle
-}
+export default function makeStyles(theme: Theme) {
+  const { spacing, typography, colors, borderRadius } = theme;
 
-export default StyleSheet.create<Styles>({
-
-  return StyleSheet.create({a
+  return StyleSheet.create({
+    // root container
     container: {
       flex: 1,
       padding: spacing.lg,
-      backgroundColor: colors.background,
     },
+
+    // ScrollView contentContainerStyle
+    scrollContent: {
+      paddingBottom: spacing.xl,
+    },
+
+    // Big header text
     header: {
       fontSize: typography.h1.fontSize,
-      fontWeight: 'bold',
+      fontWeight: typography.h1.fontWeight as any,
       color: colors.text,
       marginBottom: spacing.md,
     },
+
+    // Descriptive paragraph under header
     description: {
-      fontSize: typography.body.fontSize,
       color: colors.text,
       lineHeight: 22,
       marginBottom: spacing.lg,
     },
+
+    // Link style (Privacy Policy)
     link: {
       color: colors.primary,
-      marginBottom: spacing.sm,
+      marginBottom: spacing.md,
     },
-    button: {
+
+    // Last link has a larger bottom margin
+    linkLast: {
+      color: colors.primary,
+      marginBottom: spacing.lg,
+    },
+
+    // Button for each subscription plan
+    planButton: {
       backgroundColor: colors.accent,
       padding: spacing.md,
       borderRadius: borderRadius.lg,
       alignItems: 'center',
       marginTop: spacing.md,
     },
-    buttonText: {
+
+    // Text inside the planButton
+    planButtonText: {
       color: colors.onPrimary,
       fontSize: 16,
       fontWeight: 'bold',
