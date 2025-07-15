@@ -121,6 +121,10 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
           • Supports future feature development 💙
         </ThemedText>
 
+        <ThemedText style={{ color: colors.onPrimary }}>
+        LooLocator Premium is only $1.99 monthly and you can cancel anytime
+        </ThemedText>
+
         <TouchableOpacity onPress={() => Linking.openURL('http://freepublicbathrooms.com/privacy')}>
           <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Privacy Policy</ThemedText>
         </TouchableOpacity>
