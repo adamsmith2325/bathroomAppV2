@@ -1,4 +1,5 @@
 // src/screens/PremiumScreen.tsx
+import makeStyles from './PremiumScreen.styles';
 import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import React, { useCallback, useEffect, useState } from 'react';
