@@ -35,6 +35,7 @@ import {
   purchaseUpdatedListener,
 } from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
+import PremiumModal from './PremiumScreen';
 
 interface LocalProfile {
   id: string;
@@ -231,6 +232,7 @@ export function MyAccountScreen() {
   // ——————————————————————————
   // 8) Manual purchase button
   // ——————————————————————————
+  const [ showPremium, setShowPremium ] = useState(false);
   const handlePurchase = useCallback(
     async (sku: string) => {
       setPurchaseLoading(true);
@@ -395,7 +397,7 @@ export function MyAccountScreen() {
             </ThemedText>
           ) : (
             <TouchableOpacity
-              onPress={() => navigation.navigate('Premium')}
+              onPress={() => setShowPremium(true)}
               style={{
                 backgroundColor: colors.accent,
                 padding: spacing.sm,
@@ -406,6 +408,10 @@ export function MyAccountScreen() {
               <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
                 View Premium Options
               </ThemedText>
+              <PremiumModal
+              visible={showPremium}
+              onClose={() => setShowPremium(false)}
+              />
             </TouchableOpacity>
           )}
         </View>

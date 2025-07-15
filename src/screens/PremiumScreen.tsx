@@ -1,19 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  ActivityIndicator,
-  Linking,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  ScrollView,
+  TouchableOpacity
+} from 'react-native';
 
-import { ThemedView, ThemedText } from '../components/Themed';
+import { ThemedText, ThemedView } from '../components/Themed';
+import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
-import { supabase } from '../lib/supabase';
 
 import {
   Subscription,
@@ -26,7 +26,12 @@ import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
 
 import styles from './PremiumScreen.styles';
 
-export default function PremiumScreen() {
+interface PremiumModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
   const { theme } = useTheme();
   const { colors } = theme;
   const navigation = useNavigation();
@@ -39,6 +44,8 @@ export default function PremiumScreen() {
   useEffect(() => {
     let updateSub: any = null;
     let errorSub: any = null;
+
+    if (!visible) return;
 
     (async () => {
       try {
@@ -95,21 +102,27 @@ export default function PremiumScreen() {
   );
 
   return (
+    <Modal
+    visible={visible}
+    animationType='slide'
+    transparent={false}
+    onRequestClose={onClose}
+    >
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <ThemedText style={styles.header}>
+        <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
           Go Ad-Free with LooLocator Premium
         </ThemedText>
 
-        <ThemedText style={styles.description}>
+        <ThemedText style={{ color: colors.onPrimary }}>
           • Removes banner ads{'\n'}
           • Unlocks advanced map filters{'\n'}
           • Saves unlimited favourite bathrooms{'\n'}
           • Supports future feature development 💙
         </ThemedText>
 
-        <TouchableOpacity onPress={() => Linking.openURL('https://yourdomain.com/privacy')}>
-          <ThemedText style={styles.link}>Privacy Policy</ThemedText>
+        <TouchableOpacity onPress={() => Linking.openURL('http://freepublicbathrooms.com/privacy')}>
+          <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Privacy Policy</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -119,7 +132,7 @@ export default function PremiumScreen() {
             )
           }
         >
-          <ThemedText style={styles.linkLast}>Terms of Use</ThemedText>
+          <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Terms of Use</ThemedText>
         </TouchableOpacity>
 
         {plansLoading ? (
@@ -128,14 +141,14 @@ export default function PremiumScreen() {
           plans.map(plan => (
             <TouchableOpacity
               key={plan.productId}
-              style={styles.planButton}
+              style={styles.buttonContainer}
               onPress={() => handlePurchase(plan.productId)}
               disabled={purchaseLoading}
             >
               {purchaseLoading ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
-                <ThemedText style={styles.planButtonText}>
+                <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
                   Go Ad-Free!
                 </ThemedText>
               )}
@@ -144,5 +157,6 @@ export default function PremiumScreen() {
         )}
       </ScrollView>
     </ThemedView>
+    </Modal>
   );
 }
