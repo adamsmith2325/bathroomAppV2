@@ -118,7 +118,7 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
           • Removes banner ads{'\n'}
           • Unlocks advanced map filters{'\n'}
           • Saves unlimited favourite bathrooms{'\n'}
-          • Supports future feature development 💙
+          • Supports future feature development
         </ThemedText>
 
         <ThemedText style={{ color: colors.onPrimary }}>
