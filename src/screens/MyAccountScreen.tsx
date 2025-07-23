@@ -81,6 +81,7 @@ export function MyAccountScreen() {
   const [plans, setPlans] = useState<Subscription[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
 
@@ -269,7 +270,61 @@ export function MyAccountScreen() {
   }
 
   // ——————————————————————————
-  // 10) Inline text styles
+  // 10) Delete Account
+  // ——————————————————————————
+
+const handleDeleteAccount = async () => {
+  // 1) confirm with the user
+  Alert.alert(
+    'Delete your account?',
+    'This will permanently remove all your data and sign you out.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setDeletingAccount(true);
+          try {
+            // 2) delete profile row
+            const { error: profileErr } = await supabase
+              .from('profiles')
+              .delete()
+              .eq('id', localProfile!.id);
+
+            if (profileErr) throw profileErr;
+
+            // 3) sign them out locally
+            await supabase.auth.signOut();
+
+            // 4) optionally: call an RPC or Admin API to delete the Auth user
+            //    — you will need to set this up server-side with service_role
+            // await supabase.functions.invoke('delete-user', { user_id: localProfile!.id });
+            //
+            // or, if you have the service key available (not recommended
+            // on the client!), you can do:
+            // await supabase.auth.api.deleteUser(localProfile!.id);
+
+          } catch (err: any) {
+            console.error('Account deletion error:', err);
+            Alert.alert('Couldn’t delete account', err.message);
+          } finally {
+            setDeletingAccount(false);
+          }
+        }
+      }
+    ]
+  );
+};
+
+
+
+
+
+
+
+  // ——————————————————————————
+  // 11) Inline text styles
   // ——————————————————————————
   const headerTextStyle: TextStyle = {
     fontSize: typography.header.fontSize,
@@ -421,6 +476,17 @@ export function MyAccountScreen() {
           <View style={{ marginTop: spacing.lg }}>
             <Button title="Sign Out" color={colors.error} onPress={signOut} />
           </View>
+
+          {/* Delete Account */}
+          <View style={{ marginTop: spacing.md }}>
+            <Button
+              title="Delete Account"
+              color={colors.error}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+            />
+          </View>
+
         </ThemedView>
       </ScrollView>
     </KeyboardAvoidingView>
