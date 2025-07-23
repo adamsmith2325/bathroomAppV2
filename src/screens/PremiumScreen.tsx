@@ -4,10 +4,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   ScrollView,
-  TouchableOpacity
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import { ThemedText, ThemedView } from '../components/Themed';
@@ -44,18 +47,20 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
   useEffect(() => {
     let updateSub: any = null;
     let errorSub: any = null;
-
+    Sentry.captureMessage("Visible Status: " + visible);
     if (!visible) return;
-
+    
     (async () => {
       try {
         await initIAP();
         const subs = await fetchPlans();
+        Sentry.captureMessage(subs.toString());
         setPlans(subs);
       } catch (e) {
         Sentry.captureException(e);
       } finally {
         setPlansLoading(false);
+        Sentry.captureMessage("Set Plans Loading False");
       }
 
       updateSub = purchaseUpdatedListener(async purchase => {
@@ -96,6 +101,7 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
         Alert.alert('Purchase Error', err.message ?? 'Unknown error');
       } finally {
         setPurchaseLoading(false);
+        Sentry.captureMessage("Set Purchase Loading False");
       }
     },
     []
@@ -108,6 +114,12 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
     transparent={false}
     onRequestClose={onClose}
     >
+                <View style={styles.container}>
+                  <KeyboardAvoidingView
+                    style={styles.keyboardAvoiding}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+                  >
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
@@ -161,6 +173,8 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
         )}
       </ScrollView>
     </ThemedView>
+    </KeyboardAvoidingView>
+    </View>
     </Modal>
   );
 }
