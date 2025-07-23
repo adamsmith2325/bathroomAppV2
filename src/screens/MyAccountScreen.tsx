@@ -9,6 +9,7 @@ import {
   Button,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   Switch,
@@ -35,7 +36,7 @@ import {
   purchaseUpdatedListener,
 } from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
-import PremiumModal from './PremiumScreen';
+import PremiumScreen from './PremiumScreen';
 
 interface LocalProfile {
   id: string;
@@ -463,10 +464,13 @@ const handleDeleteAccount = async () => {
               <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
                 View Premium Options
               </ThemedText>
-              <PremiumModal
-              visible={showPremium}
-              onClose={() => setShowPremium(false)}
-              />
+                  <Modal
+                    animationType="slide"
+                    transparent={false}
+                    visible={showPremium} 
+                  >
+                    <PremiumScreen onClose={() => setShowPremium(false)} />
+                  </Modal>
             </TouchableOpacity>
           )}
         </View>

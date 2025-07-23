@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
 
 import { ThemedText, ThemedView } from '../components/Themed';
 import { supabase } from '../lib/supabase';
@@ -20,11 +20,10 @@ import {
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
 
 interface PremiumModalProps {
-  visible: boolean;
   onClose: () => void;
 }
 
-export default function PremiumScreen({ visible, onClose }: PremiumModalProps) {
+export default function PremiumScreen({ onClose }: PremiumModalProps) {
   const { theme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
   const navigation = useNavigation();
@@ -35,8 +34,6 @@ export default function PremiumScreen({ visible, onClose }: PremiumModalProps) {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   useEffect(() => {
-
-    if (!visible) return;
 
     // 1) Kick off IAP init + plan fetch
     Sentry.captureMessage('IAP initialization start');
@@ -124,12 +121,6 @@ export default function PremiumScreen({ visible, onClose }: PremiumModalProps) {
 
   // ───────── UI ─────────
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={onClose}
-    >
     <ThemedView style={{ flex: 1, padding: spacing.lg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         {/* Header */}
@@ -187,8 +178,23 @@ export default function PremiumScreen({ visible, onClose }: PremiumModalProps) {
             )}
           </TouchableOpacity>
         ))}
+
+          {/* Close Button */}
+          <TouchableOpacity
+            onPress={onClose}
+            style={{
+              backgroundColor: colors.accent,
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              alignItems: 'center',
+              marginTop: spacing.md,
+            }}
+          >
+              <ThemedText style={{ color: colors.onPrimary }}>
+                Close
+              </ThemedText>
+          </TouchableOpacity>
       </ScrollView>
     </ThemedView>
-    </Modal>
   );
 }
