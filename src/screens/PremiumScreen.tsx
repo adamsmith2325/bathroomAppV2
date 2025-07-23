@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, TouchableOpacity } from 'react-native';
 
 import { ThemedText, ThemedView } from '../components/Themed';
 import { supabase } from '../lib/supabase';
@@ -19,7 +19,12 @@ import {
 } from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
 
-export default function PremiumScreen() {
+interface PremiumModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function PremiumScreen({ visible, onClose }: PremiumModalProps) {
   const { theme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
   const navigation = useNavigation();
@@ -30,6 +35,9 @@ export default function PremiumScreen() {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   useEffect(() => {
+
+    if (!visible) return;
+
     // 1) Kick off IAP init + plan fetch
     Sentry.captureMessage('IAP initialization start');
     initIAP()
@@ -116,6 +124,12 @@ export default function PremiumScreen() {
 
   // ───────── UI ─────────
   return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
     <ThemedView style={{ flex: 1, padding: spacing.lg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         {/* Header */}
@@ -175,5 +189,6 @@ export default function PremiumScreen() {
         ))}
       </ScrollView>
     </ThemedView>
+    </Modal>
   );
 }
