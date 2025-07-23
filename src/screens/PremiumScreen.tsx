@@ -1,17 +1,9 @@
+// src/screens/PremiumScreen.tsx
 import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
+import * as Linking from 'expo-linking';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View
-} from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
 
 import { ThemedText, ThemedView } from '../components/Themed';
 import { supabase } from '../lib/supabase';
@@ -27,16 +19,9 @@ import {
 } from 'react-native-iap';
 import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
 
-import styles from './PremiumScreen.styles';
-
-interface PremiumModalProps {
-  visible: boolean;
-  onClose: () => void;
-}
-
-export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
+export default function PremiumScreen() {
   const { theme } = useTheme();
-  const { colors } = theme;
+  const { colors, spacing, borderRadius, typography } = theme;
   const navigation = useNavigation();
   const { user } = useSession();
 
@@ -45,48 +30,61 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   useEffect(() => {
-    let updateSub: any = null;
-    let errorSub: any = null;
-    Sentry.captureMessage("Visible Status: " + visible);
-    if (!visible) return;
-    
-    (async () => {
+    // 1) Kick off IAP init + plan fetch
+    Sentry.captureMessage('IAP initialization start');
+    initIAP()
+      .then(() => {
+        Sentry.captureMessage('IAP initialized');
+        return fetchPlans();
+      })
+      .then(fetchedPlans => {
+        setPlans(fetchedPlans);
+        Sentry.captureMessage(`Fetched ${fetchedPlans.length} subscription plans`);
+      })
+      .catch(err => {
+        Sentry.captureException(err);
+        console.error('Failed to init or fetch plans', err);
+        Alert.alert('Error', 'Could not load subscription plans.');
+      })
+      .finally(() => {
+        setPlansLoading(false);
+        Sentry.captureMessage('IAP setup done');
+      });
+
+    // 2) Listen for purchase updates
+    const updSub = purchaseUpdatedListener(async purchase => {
+      Sentry.captureMessage('purchaseUpdatedListener fired');
       try {
-        await initIAP();
-        const subs = await fetchPlans();
-        Sentry.captureMessage(subs.toString());
-        setPlans(subs);
+        await finishTransaction({ purchase, isConsumable: false });
+        Sentry.captureMessage(`finishTransaction succeeded for ${purchase.productId}`);
+
+        // mark user premium in Supabase
+        if (user) {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ is_premium: true })
+            .eq('id', user.id);
+          if (error) throw error;
+        }
+
+        // close the paywall
+        navigation.goBack();
       } catch (e) {
         Sentry.captureException(e);
-      } finally {
-        setPlansLoading(false);
-        Sentry.captureMessage("Set Plans Loading False");
+        Alert.alert('Error', 'Could not complete purchase.');
       }
+    });
 
-      updateSub = purchaseUpdatedListener(async purchase => {
-        try {
-          await finishTransaction({ purchase, isConsumable: false });
-          if (user) {
-            await supabase
-              .from('profiles')
-              .update({ is_premium: true })
-              .eq('id', user.id);
-          }
-          navigation.goBack(); // Close the paywall on success
-        } catch (err) {
-          Sentry.captureException(err);
-        }
-      });
+    // 3) Listen for purchase errors
+    const errSub = purchaseErrorListener(e => {
+      Sentry.captureException(e);
+      Alert.alert('Purchase failed', e.message);
+    });
 
-      errorSub = purchaseErrorListener(err => {
-        Sentry.captureException(err);
-        Alert.alert('Purchase failed', err.message);
-      });
-    })();
-
+    // 4) Cleanup
     return () => {
-      updateSub?.remove();
-      errorSub?.remove();
+      updSub.remove();
+      errSub.remove();
       endConnection();
     };
   }, [user, navigation]);
@@ -94,87 +92,88 @@ export default function PremiumModal({ visible, onClose } : PremiumModalProps) {
   const handlePurchase = useCallback(
     async (sku: string) => {
       setPurchaseLoading(true);
+      Sentry.captureMessage(`requestSubscription for SKU: ${sku}`);
       try {
         await purchasePremium(sku);
+        // actual state update & supabase write happen in the listener above
       } catch (err: any) {
         Sentry.captureException(err);
         Alert.alert('Purchase Error', err.message ?? 'Unknown error');
-      } finally {
         setPurchaseLoading(false);
-        Sentry.captureMessage("Set Purchase Loading False");
       }
     },
     []
   );
 
+  // ───────── Loading State ─────────
+  if (plansLoading) {
+    return (
+      <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </ThemedView>
+    );
+  }
+
+  // ───────── UI ─────────
   return (
-    <Modal
-    visible={visible}
-    animationType='slide'
-    transparent={false}
-    onRequestClose={onClose}
-    >
-                <View style={styles.container}>
-                  <KeyboardAvoidingView
-                    style={styles.keyboardAvoiding}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
-                  >
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
+    <ThemedView style={{ flex: 1, padding: spacing.lg }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
+        {/* Header */}
+        <ThemedText
+          style={{
+            fontSize: typography.header.fontSize * 1.5,
+            fontWeight: 'bold',
+            color: colors.text,
+            marginBottom: spacing.md,
+          }}
+        >
           Go Ad-Free with LooLocator Premium
         </ThemedText>
 
-        <ThemedText style={{ color: colors.onPrimary }}>
+        {/* Benefits */}
+        <ThemedText style={{ color: colors.text, lineHeight: 22, marginBottom: spacing.lg }}>
           • Removes banner ads{'\n'}
           • Unlocks advanced map filters{'\n'}
-          • Saves unlimited favourite bathrooms{'\n'}
-          • Supports future feature development
+          • Saves unlimited favorite bathrooms{'\n'}
+          • Supports future feature development 💙
         </ThemedText>
 
-        <ThemedText style={{ color: colors.onPrimary }}>
-        LooLocator Premium is only $1.99 monthly and you can cancel anytime
-        </ThemedText>
-
-        <TouchableOpacity onPress={() => Linking.openURL('http://freepublicbathrooms.com/privacy')}>
-          <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Privacy Policy</ThemedText>
+        {/* Legal */}
+        <TouchableOpacity onPress={() => Linking.openURL('https://yourdomain.com/privacy')}>
+          <ThemedText style={{ color: colors.primary, marginBottom: 4 }}>
+            Privacy Policy
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://yourdomain.com/terms')}>
+          <ThemedText style={{ color: colors.primary, marginBottom: spacing.lg }}>
+            Terms of Use
+          </ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() =>
-            Linking.openURL(
-              'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
-            )
-          }
-        >
-          <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Terms of Use</ThemedText>
-        </TouchableOpacity>
-
-        {plansLoading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          plans.map(plan => (
-            <TouchableOpacity
-              key={plan.productId}
-              style={styles.buttonContainer}
-              onPress={() => handlePurchase(plan.productId)}
-              disabled={purchaseLoading}
-            >
-              {purchaseLoading ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
-                  Go Ad-Free!
-                </ThemedText>
-              )}
-            </TouchableOpacity>
-          ))
-        )}
+        {/* Purchase Buttons */}
+        {plans.map(plan => (
+          <TouchableOpacity
+            key={plan.productId}
+            onPress={() => handlePurchase(plan.productId)}
+            disabled={purchaseLoading}
+            style={{
+              backgroundColor: colors.accent,
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              alignItems: 'center',
+              marginTop: spacing.md,
+            }}
+          >
+            {purchaseLoading ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
+                Go Ad-Free!
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </ThemedView>
-    </KeyboardAvoidingView>
-    </View>
-    </Modal>
   );
 }
