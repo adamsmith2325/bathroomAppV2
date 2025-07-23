@@ -121,7 +121,7 @@ export default function PremiumScreen({ onClose }: PremiumModalProps) {
 
   // ───────── UI ─────────
   return (
-    <ThemedView style={{ flex: 1, padding: spacing.lg }}>
+    <ThemedView style={{ flex: 1, padding: spacing.lg, paddingTop: spacing.lg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         {/* Header */}
         <ThemedText
@@ -130,6 +130,7 @@ export default function PremiumScreen({ onClose }: PremiumModalProps) {
             fontWeight: 'bold',
             color: colors.text,
             marginBottom: spacing.md,
+            marginTop: spacing.lg
           }}
         >
           Go Ad-Free with LooLocator Premium
@@ -144,12 +145,12 @@ export default function PremiumScreen({ onClose }: PremiumModalProps) {
         </ThemedText>
 
         {/* Legal */}
-        <TouchableOpacity onPress={() => Linking.openURL('https://yourdomain.com/privacy')}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://freepublicbathrooms.com/privacy-policy')}>
           <ThemedText style={{ color: colors.primary, marginBottom: 4 }}>
             Privacy Policy
           </ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('https://yourdomain.com/terms')}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://freepublicbathrooms.com/terms-of-service')}>
           <ThemedText style={{ color: colors.primary, marginBottom: spacing.lg }}>
             Terms of Use
           </ThemedText>
