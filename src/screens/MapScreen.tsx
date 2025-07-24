@@ -6,8 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import {
   BannerAd,
-  BannerAdSize,
-  TestIds
+  BannerAdSize
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 import { recordEvent } from '../lib/reviewManager';
@@ -250,10 +249,10 @@ export default function MapScreen() {
           <View style={styles.adContainer}>
             <BannerAd
               unitId={
-                 TestIds.BANNER
-                // Platform.OS === "ios"
-                //   ? "ca-app-pub-5901242452853695/3188072947"
-                //   : "ca-app-pub-5901242452853695/4501154615"
+                //  TestIds.BANNER
+                Platform.OS === "ios"
+                  ? "ca-app-pub-5901242452853695/3188072947"
+                  : "ca-app-pub-5901242452853695/4501154615"
               }
               size={BannerAdSize.FULL_BANNER}
               onAdLoaded={() => Sentry.captureMessage("Banner Loaded")}
