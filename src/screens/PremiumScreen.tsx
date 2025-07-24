@@ -138,7 +138,7 @@ export default function PremiumScreen({ onClose }: PremiumModalProps) {
 
         {/* Benefits */}
         <ThemedText style={{ color: colors.text, lineHeight: 22, marginBottom: spacing.lg }}>
-          For only $1.99 monthly:
+          For only $1.99 monthly:{'\n'}
           • Removes banner ads{'\n'}
           • Unlocks advanced map filters{'\n'}
           • Saves unlimited favorite bathrooms{'\n'}
