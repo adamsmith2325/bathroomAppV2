@@ -98,12 +98,16 @@ function Root() {
   return (
     <>
     <NavigationContainer>
-      {session ? <MainTabs /> : <AuthScreen />}
-    </NavigationContainer>
-    <WelcomeModal
+      {session ? 
+      <>
+      <MainTabs />
+          <WelcomeModal
         visible={showWelcome}
         onClose={() => setShowWelcome(false)}
       />
+      </>
+      : <AuthScreen />}
+    </NavigationContainer>
     </>
   )
 }
