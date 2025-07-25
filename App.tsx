@@ -9,7 +9,7 @@ import { LogBox, Platform } from 'react-native'
 import { MobileAds } from 'react-native-google-mobile-ads'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
-import WelcomeModal from './src/components/WelcomeModal'
+import { WelcomeModal } from './src/components/WelcomeModal'
 import { supabase } from './src/lib/supabase'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
@@ -99,7 +99,7 @@ function Root() {
     <NavigationContainer>
       {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
-    <WelcomeModal visible={showWelcome} onFinish={handleFinish} />
+    <WelcomeModal />
     </>
   )
 }

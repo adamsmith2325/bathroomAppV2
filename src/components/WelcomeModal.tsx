@@ -1,141 +1,208 @@
 // src/components/WelcomeModal.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Dimensions,
-    FlatList,
-    Modal,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TextStyle,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { ThemedText, ThemedView } from './Themed';
+import { ThemedText, ThemedView } from '../components/Themed';
+import { supabase } from '../lib/supabase';
+import { useTheme } from '../lib/themeContext';
+import { useSession } from '../lib/useSession';
 
 const { width } = Dimensions.get('window');
 
-export interface Slide {
-  key: string;
-  title: string;
-  description: string;
-}
-
-const slides: Slide[] = [
+const SLIDES = [
   {
-    key: '1',
-    title: 'Welcome to LooLocator',
-    description: 'Find public restrooms near you in seconds.',
+    title: 'Welcome to LooLocator!',
+    description:
+      'Quickly find public restrooms near you on an interactive map.',
   },
   {
-    key: '2',
     title: 'Add a Bathroom',
     description:
-      'Tap the “+” tab, then tap on the map to set your location, fill in the details and hit “Add Bathroom.”',
+      'Tap anywhere on the map to drop a pin, enter details, and share with the community.',
   },
   {
-    key: '3',
-    title: 'Mark as Used',
-    description: 'Viewed a restroom? Open its details and tap “Mark as Used” to track your history.',
+    title: 'Filter by Radius',
+    description:
+      'Set your notify radius in My Account to only see bathrooms within your preferred distance.',
   },
   {
-    key: '4',
+    title: 'Save Favorites',
+    description:
+      'Tap the ★ star icon on any bathroom to bookmark it for easy access later.',
+  },
+  {
     title: 'Go Premium',
-    description: 'Remove ads and unlock extra filters with a one-time purchase.',
+    description:
+      'Upgrade to remove ads, unlock advanced filters, and support future features.',
   },
 ];
 
-interface Props {
-  visible: boolean;
-  onFinish: () => void;
-}
+export function WelcomeModal() {
+  const { theme } = useTheme();
+  const { colors, spacing, borderRadius, typography } = theme;
+  const { profile } = useSession();
+  const [visible, setVisible] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
-export default function WelcomeModal({ visible, onFinish }: Props) {
-  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (profile && profile.welcome_seen === false) {
+      setVisible(true);
+    }
+  }, [profile]);
 
-  const onNext = () => {
-    if (index === slides.length - 1) {
-      onFinish();
-      setIndex(0);
-    } else {
-      setIndex(i => i + 1);
+  const handleClose = async () => {
+    setVisible(false);
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ welcome_seen: true })
+        .eq('id', profile.id);
     }
   };
 
+  const handleNext = () => {
+    if (slide < SLIDES.length - 1) {
+      const next = slide + 1;
+      setSlide(next);
+      scrollRef.current?.scrollTo({ x: next * width, animated: true });
+    } else {
+      handleClose();
+    }
+  };
+
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} animationType="slide">
-      <ThemedView style={styles.container}>
-        <FlatList
-          data={slides}
-          keyExtractor={s => s.key}
-          horizontal
-          pagingEnabled
-          scrollEnabled={false}
-          renderItem={({ item, index: i }) => (
-            <View style={styles.slide}>
-              <ThemedText style={styles.title}>{item.title}</ThemedText>
-              <ThemedText style={styles.description}>
-                {item.description}
-              </ThemedText>
-            </View>
-          )}
-          extraData={index}
-        />
-        <View style={styles.footer}>
-          <View style={styles.pager}>
-            {slides.map((_, i) => (
+    <Modal visible transparent animationType="slide">
+      <View style={styles.overlay}>
+        <ThemedView
+          style={[
+            styles.modal,
+            {
+              backgroundColor: colors.background,
+              borderRadius: borderRadius.md,
+              padding: spacing.lg,
+            },
+          ]}
+        >
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEnabled={false}
+            contentContainerStyle={{ width: width * SLIDES.length }}
+          >
+            {SLIDES.map((s, i) => (
+              <View key={i} style={[styles.slide, { width }]}>
+                <ThemedText
+                  style={{
+                    fontSize: typography.header.fontSize,
+                    // <-- cast here
+                    fontWeight: typography.header
+                      .fontWeight as TextStyle['fontWeight'],
+                    color: colors.text,
+                    marginBottom: spacing.md,
+                    textAlign: 'center',
+                  }}
+                >
+                  {s.title}
+                </ThemedText>
+                <ThemedText
+                  style={{
+                    fontSize: typography.body.fontSize,
+                    fontWeight: typography.body
+                      .fontWeight as TextStyle['fontWeight'],
+                    color: colors.text,
+                    lineHeight: typography.body.fontSize * 1.4,
+                    textAlign: 'center',
+                  }}
+                >
+                  {s.description}
+                </ThemedText>
+              </View>
+            ))}
+          </ScrollView>
+
+          <View style={styles.dotsContainer}>
+            {SLIDES.map((_, i) => (
               <View
                 key={i}
                 style={[
                   styles.dot,
-                  i === index && styles.dotActive,
+                  {
+                    backgroundColor:
+                      i === slide ? colors.primary : colors.border,
+                  },
                 ]}
               />
             ))}
           </View>
-          <TouchableOpacity onPress={onNext} style={styles.button}>
-            <ThemedText style={styles.buttonText}>
-              {index === slides.length - 1 ? 'Get Started' : 'Next'}
+
+          <TouchableOpacity
+            onPress={handleNext}
+            style={[
+              styles.button,
+              {
+                backgroundColor: colors.primary,
+                borderRadius: borderRadius.sm,
+                paddingVertical: spacing.sm,
+                marginTop: spacing.lg,
+              },
+            ]}
+          >
+            <ThemedText
+              style={{
+                color: colors.primary,
+                fontSize: typography.body.fontSize,
+                fontWeight: typography.body
+                  .fontWeight as TextStyle['fontWeight'],
+                textAlign: 'center',
+              }}
+            >
+              {slide < SLIDES.length - 1 ? 'Next' : 'Get Started'}
             </ThemedText>
           </TouchableOpacity>
-        </View>
-      </ThemedView>
+        </ThemedView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  slide: {
-    width,
-    padding: 24,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 18,
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-  footer: {
     alignItems: 'center',
-    paddingBottom: 40,
   },
-  pager: { flexDirection: 'row', marginBottom: 20 },
+  modal: {
+    width: width - 40,
+  },
+  slide: {
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#888',
     marginHorizontal: 4,
   },
-  dotActive: { backgroundColor: '#fff' },
   button: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
+    alignSelf: 'stretch',
   },
-  buttonText: { color: '#fff', fontSize: 16 },
 });
