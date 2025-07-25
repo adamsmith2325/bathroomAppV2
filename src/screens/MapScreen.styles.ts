@@ -9,6 +9,7 @@ export interface Styles {
   loadingText: TextStyle
   modalOverlay: ViewStyle
   adContainer: ViewStyle
+  helpButton: ViewStyle
   modalContainer: (padding: number) => ViewStyle
   card: (radius: number, padding: number) => ViewStyle
   headerText: (
@@ -61,10 +62,27 @@ const staticStyles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingVertical: 4,
   },
+    helpButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // elevation/shadows:
+    elevation: 5,                // Android
+    shadowColor: '#000',         // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
 })
 
 const styles: Styles = {
   // static
+  helpButton: staticStyles.helpButton,
   adContainer: staticStyles.adContainer,
   container: staticStyles.container,
   map: staticStyles.map,

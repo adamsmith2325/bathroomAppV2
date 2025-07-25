@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { Alert, Platform, TouchableOpacity, View } from 'react-native';
 import {
   BannerAd,
   BannerAdSize
@@ -11,18 +11,24 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { recordEvent } from '../lib/reviewManager';
 
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText, ThemedView } from '../components/Themed';
+import { WelcomeModal } from '../components/WelcomeModal';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
 import styles from './MapScreen.styles';
+
 
 import BathroomDetailsModal, {
   Bathroom,
   CommentWithProfileRow,
 } from '../components/BathroomDetailsModal';
 
+
+
 export default function MapScreen() {
+  const [helpVisible, setHelpVisible] = useState(false);
   const { user, isPremium } = useSession();
   const { theme } = useTheme();
   const { colors } = theme;
@@ -244,6 +250,7 @@ export default function MapScreen() {
           onClose={() => setModalVisible(false)}
         />
       )}
+      
         {/*Ad Container */}
          {!profile?.is_premium && (
           <View style={styles.adContainer}>
@@ -260,6 +267,22 @@ export default function MapScreen() {
             />
           </View>
       )}
+            <WelcomeModal
+        visible={helpVisible}
+        onClose={() => setHelpVisible(false)}
+      />
+
+      {/* 2️⃣ The floating help button */}
+      <TouchableOpacity
+        onPress={() => setHelpVisible(true)}
+        style={[styles.helpButton, { backgroundColor: colors.surface }]}
+      >
+        <Ionicons
+          name="help-circle-outline"
+          size={28}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
     </ThemedView>
     
   );

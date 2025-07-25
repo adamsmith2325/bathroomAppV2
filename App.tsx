@@ -64,6 +64,7 @@ Notifications.setNotificationHandler({
 function Root() {
   const { session, profile, isLoading } = useSession();
   const [showWelcome, setShowWelcome] = useState(false);
+  
 
   // when session/profile loads, if they haven't seen it yet, show the modal
   useEffect(() => {
@@ -99,7 +100,10 @@ function Root() {
     <NavigationContainer>
       {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
-    <WelcomeModal />
+    <WelcomeModal
+        visible={showWelcome}
+        onClose={() => setShowWelcome(false)}
+      />
     </>
   )
 }

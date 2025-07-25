@@ -1,5 +1,5 @@
 // src/components/WelcomeModal.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -44,22 +44,20 @@ const SLIDES = [
   },
 ];
 
-export function WelcomeModal() {
+interface WelcomeModalProps {
+  visible: boolean
+  onClose: () => void
+}
+
+export function WelcomeModal({ visible, onClose }: WelcomeModalProps) 
+{
   const { theme } = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
   const { profile } = useSession();
-  const [visible, setVisible] = useState(false);
   const [slide, setSlide] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    if (profile && profile.welcome_seen === false) {
-      setVisible(true);
-    }
-  }, [profile]);
-
   const handleClose = async () => {
-    setVisible(false);
     if (profile) {
       await supabase
         .from('profiles')
@@ -81,7 +79,7 @@ export function WelcomeModal() {
   if (!visible) return null;
 
   return (
-    <Modal visible transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <ThemedView
           style={[
