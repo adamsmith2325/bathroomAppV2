@@ -1,13 +1,15 @@
 // App.tsx
 import { NavigationContainer } from '@react-navigation/native'
+
 import * as Sentry from '@sentry/react-native'
 import * as Location from 'expo-location'
 import * as Notifications from 'expo-notifications'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { LogBox, Platform } from 'react-native'
 import { MobileAds } from 'react-native-google-mobile-ads'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GEOFENCE_TASK } from './src/background/geofenceTask'
+import WelcomeModal from './src/components/WelcomeModal'
 import { supabase } from './src/lib/supabase'
 import { ThemeProvider } from './src/lib/themeContext'
 import { SessionProvider, useSession } from './src/lib/useSession'
@@ -60,7 +62,26 @@ Notifications.setNotificationHandler({
 })
 
 function Root() {
-  const { session } = useSession()
+  const { session, profile, isLoading } = useSession();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  // when session/profile loads, if they haven't seen it yet, show the modal
+  useEffect(() => {
+    if (!isLoading && session && profile && !profile.welcome_seen) {
+      setShowWelcome(true);
+    }
+  }, [isLoading, session, profile]);
+
+  // when they finish the tour, flip the flag in supabase
+  const handleFinish = async () => {
+    setShowWelcome(false);
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ welcome_seen: true })
+        .eq('id', profile.id);
+    }
+  };
   
   // register a listener so tapping the notif navigates
   useEffect(() => {
@@ -74,9 +95,12 @@ function Root() {
   }, [])
 
   return (
+    <>
     <NavigationContainer>
       {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
+    <WelcomeModal visible={showWelcome} onFinish={handleFinish} />
+    </>
   )
 }
 

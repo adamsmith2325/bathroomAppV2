@@ -17,6 +17,7 @@ interface Profile {
   avatar_url: string | null
   notifyRadius: number
   is_premium: boolean
+  welcome_seen: boolean
 }
 
 interface SessionContextType {
@@ -102,6 +103,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           avatar_url: null,
           notify_radius: 0,
           is_premium: false,
+          welcome_seen: false,
         })
       // ignore duplicate-key errors (code 23505)
       if (insertErr && insertErr.code !== '23505') {
@@ -111,7 +113,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // c) fetch the canonical profile row
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, name, avatar_url, notify_radius, is_premium')
+        .select('id, email, name, avatar_url, notify_radius, is_premium, welcome_seen')
         .eq('id', user.id)
         .single()
 
@@ -124,6 +126,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           avatar_url: data.avatar_url,
           notifyRadius: data.notify_radius,
           is_premium: data.is_premium,
+          welcome_seen: data.welcome_seen,
         }
         setProfile(prof)
         setIsPremium(prof.is_premium)
