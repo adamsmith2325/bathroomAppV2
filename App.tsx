@@ -1,20 +1,19 @@
 // App.tsx
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer } from '@react-navigation/native';
+import * as Sentry from '@sentry/react-native';
+import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
+import React, { useEffect, useState } from 'react';
+import { LogBox, Platform } from 'react-native';
 
-import * as Sentry from '@sentry/react-native'
-import * as Location from 'expo-location'
-import * as Notifications from 'expo-notifications'
-import React, { useEffect, useState } from 'react'
-import { LogBox, Platform } from 'react-native'
-import { MobileAds } from 'react-native-google-mobile-ads'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { GEOFENCE_TASK } from './src/background/geofenceTask'
-import { WelcomeModal } from './src/components/WelcomeModal'
-import { supabase } from './src/lib/supabase'
-import { ThemeProvider } from './src/lib/themeContext'
-import { SessionProvider, useSession } from './src/lib/useSession'
-import { MainTabs } from './src/navigation/BottomTabNavigator'
-import AuthScreen from './src/screens/AuthScreen'
+import { MobileAds } from 'react-native-google-mobile-ads';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GEOFENCE_TASK } from './src/background/geofenceTask';
+import { supabase } from './src/lib/supabase';
+import { ThemeProvider } from './src/lib/themeContext';
+import { SessionProvider, useSession } from './src/lib/useSession';
+import { MainTabs } from './src/navigation/BottomTabNavigator';
+import AuthScreen from './src/screens/AuthScreen';
 
 
 Sentry.init({
@@ -98,15 +97,7 @@ function Root() {
   return (
     <>
     <NavigationContainer>
-      {session ? 
-      <>
-      <MainTabs />
-          <WelcomeModal
-        visible={showWelcome}
-        onClose={() => setShowWelcome(false)}
-      />
-      </>
-      : <AuthScreen />}
+      {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
     </>
   )
@@ -119,6 +110,10 @@ export default Sentry.wrap(function App() {
         <ThemeProvider>
           <GeofenceRegistrar />
           <Root />
+          {/* <WelcomeModal
+            visible={showWelcome}
+            onClose={() => setShowWelcome(false)}
+          /> */}
         </ThemeProvider>
       </SessionProvider>
     </SafeAreaProvider>

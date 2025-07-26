@@ -28,6 +28,12 @@ import BathroomDetailsModal, {
 
 
 export default function MapScreen() {
+   // ** Rating states **
+  const [userRating, setUserRating] = useState(0);
+  const [avgRating, setAvgRating] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+
+
   const [helpVisible, setHelpVisible] = useState(false);
   const { user, isPremium } = useSession();
   const { theme } = useTheme();
@@ -79,6 +85,7 @@ export default function MapScreen() {
     await fetchUsageCount(bathroom.id);
     await fetchComments(bathroom.id);
     await fetchFavoriteStatus(bathroom.id);
+    await fetchAvgRating(bathroom.id);
     recordEvent('viewBathroom').catch(console.warn);
   };
 
@@ -90,6 +97,18 @@ export default function MapScreen() {
       .eq('bathroom_id', bathroom_id);
     if (!error && typeof count === 'number') {
       setUsageCount(count);
+    }
+  };
+
+    // ** fetch average rating **
+  const fetchAvgRating = async (bathroomId: string) => {
+    const { data, error } = await supabase
+      .from('bathroom_ratings')
+      .select('rating')
+      .eq('bathroom_id', bathroomId);
+    if (!error && data) {
+      const sum = data.reduce((acc, r) => acc + r.rating, 0);
+      setAvgRating(data.length ? sum / data.length : 0);
     }
   };
 
@@ -159,6 +178,25 @@ export default function MapScreen() {
     Alert.alert('👍', 'Thanks for marking this bathroom as used!');
   };
 
+    // ** submit user rating **
+  const handleRatingSubmit = async () => {
+    if (!selectedBathroom || !userRating || !user) return;
+    setRatingSubmitting(true);
+    const { error } = await supabase.from('bathroom_ratings').insert({
+      bathroom_id: selectedBathroom.id,
+      user_id: user.id,
+      rating: userRating,
+    });
+    if (error) {
+      Alert.alert('Rating failed', error.message);
+    } else {
+      // refresh average
+      fetchAvgRating(selectedBathroom.id);
+      Alert.alert('Thanks!', 'Your rating has been recorded.');
+    }
+    setRatingSubmitting(false);
+  };
+
   // 8) Directions
   const handleGetDirections = () => {
     if (!selectedBathroom) return;
@@ -169,6 +207,7 @@ export default function MapScreen() {
         : `google.navigation:q=${lat},${lng}`;
     Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open directions.'));
   };
+  
 
   // 9) Submit a new comment
   const handleCommentSubmit = async () => {
@@ -242,6 +281,7 @@ export default function MapScreen() {
           newComment={newComment}
           isPremium={isPremium}
           isFav={isFav}
+          avgRating={avgRating}
           onMarkUsed={handleMarkUsed}
           onToggleFavorite={toggleFavorite}
           onGetDirections={handleGetDirections}

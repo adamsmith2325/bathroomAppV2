@@ -43,6 +43,7 @@ interface Props {
   newComment: string;
   isPremium: boolean;
   isFav: boolean;
+  avgRating: number;
   onMarkUsed(): void;
   onToggleFavorite(): void;
   onGetDirections(): void;
@@ -59,6 +60,7 @@ export default function BathroomDetailsModal({
   newComment,
   isPremium,
   isFav,
+  avgRating,
   onMarkUsed,
   onToggleFavorite,
   onGetDirections,
@@ -66,6 +68,7 @@ export default function BathroomDetailsModal({
   onSubmitComment,
   onClose,
 }: Props) {
+  
   const { theme } = useTheme();
   const { colors, spacing, typography, borderRadius } = theme;
 
@@ -146,6 +149,16 @@ export default function BathroomDetailsModal({
                   📝 Instructions: {bathroom.instructions}
                 </ThemedText>
               ) : null}
+              
+                {/* Average Rating */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                  <ThemedText style={{ color: colors.text, marginRight: 8 }}>
+                    ⭐ Avg Rating:
+                  </ThemedText>
+                  <ThemedText style={{ color: colors.text }}>
+                    {avgRating !== null ? avgRating.toFixed(1) : 'No ratings yet'}
+                  </ThemedText>
+                </View>
 
               {/* Usage count */}
               <ThemedText style={bodyTextStyle}>
