@@ -13,7 +13,6 @@ import { recordEvent } from '../lib/reviewManager';
 
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText, ThemedView } from '../components/Themed';
-import { WelcomeModal } from '../components/WelcomeModal';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
@@ -307,10 +306,10 @@ export default function MapScreen() {
             />
           </View>
       )}
-            <WelcomeModal
+      {/* <WelcomeModal
         visible={helpVisible}
         onClose={() => setHelpVisible(false)}
-      />
+      /> */}
 
       {/* 2️⃣ The floating help button */}
       <TouchableOpacity

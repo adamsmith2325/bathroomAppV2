@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { LogBox, Platform } from 'react-native';
 
 import { MobileAds } from 'react-native-google-mobile-ads';
@@ -61,27 +61,27 @@ Notifications.setNotificationHandler({
 })
 
 function Root() {
-  const { session, profile, isLoading } = useSession();
-  const [showWelcome, setShowWelcome] = useState(false);
+   const { session, profile, isLoading } = useSession();
+  // const [showWelcome, setShowWelcome] = useState(false);
   
 
-  // when session/profile loads, if they haven't seen it yet, show the modal
-  useEffect(() => {
-    if (!isLoading && session && profile && !profile.welcome_seen) {
-      setShowWelcome(true);
-    }
-  }, [isLoading, session, profile]);
+  // // when session/profile loads, if they haven't seen it yet, show the modal
+  // useEffect(() => {
+  //   if (!isLoading && session && profile && !profile.welcome_seen) {
+  //     setShowWelcome(true);
+  //   }
+  // }, [isLoading, session, profile]);
 
-  // when they finish the tour, flip the flag in supabase
-  const handleFinish = async () => {
-    setShowWelcome(false);
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ welcome_seen: true })
-        .eq('id', profile.id);
-    }
-  };
+  // // when they finish the tour, flip the flag in supabase
+  // const handleFinish = async () => {
+  //   setShowWelcome(false);
+  //   if (profile) {
+  //     await supabase
+  //       .from('profiles')
+  //       .update({ welcome_seen: true })
+  //       .eq('id', profile.id);
+  //   }
+  // };
   
   // register a listener so tapping the notif navigates
   useEffect(() => {
