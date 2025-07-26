@@ -11,7 +11,7 @@ export default {
     // ...config.expo,
     name: 'Public Restroom Finder',
     slug: 'bathroomAppV2',
-    version: '1.0.0',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './assets/icons/loo-pin.png',
     userInterfaceStyle: 'automatic',
