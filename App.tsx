@@ -1,18 +1,20 @@
 // App.tsx
 import { NavigationContainer } from '@react-navigation/native'
-import * as Location from 'expo-location'
-import * as Notifications from 'expo-notifications'
-import React, { useEffect } from 'react'
-import { LogBox, Platform } from 'react-native'
-import { GEOFENCE_TASK } from './src/background/geofenceTask'
-import { ThemeProvider } from './src/lib/themeContext'
-import { SessionProvider, useSession } from './src/lib/useSession'
-import BottomTabNavigator from './src/navigation/BottomTabNavigator'
-import { AuthScreen } from './src/screens/AuthScreen'
-import { supabase } from './supabase'
 
 import * as Sentry from '@sentry/react-native'
-
+import * as Location from 'expo-location'
+import * as Notifications from 'expo-notifications'
+import React, { useEffect, useState } from 'react'
+import { LogBox, Platform } from 'react-native'
+import { MobileAds } from 'react-native-google-mobile-ads'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { GEOFENCE_TASK } from './src/background/geofenceTask'
+import { WelcomeModal } from './src/components/WelcomeModal'
+import { supabase } from './src/lib/supabase'
+import { ThemeProvider } from './src/lib/themeContext'
+import { SessionProvider, useSession } from './src/lib/useSession'
+import { MainTabs } from './src/navigation/BottomTabNavigator'
+import AuthScreen from './src/screens/AuthScreen'
 
 
 Sentry.init({
@@ -31,6 +33,19 @@ Sentry.init({
   // spotlight: __DEV__,
 });
 
+
+MobileAds()
+  .initialize()
+  .then(adapterStatuses => {
+    console.log('✅ Mobile Ads initialized:', adapterStatuses);
+    Sentry.captureMessage("✅ Mobile Ads initialized");
+    
+  })
+  .catch(err => {
+    console.error('❌ Mobile Ads failed to initialize:', err);
+    Sentry.captureMessage("❌ Mobile Ads failed to initialize:" + err);
+  });
+
 // silences irrelevant RN warnings in your dashboard
 LogBox.ignoreLogs(['Setting a timer']);
 
@@ -47,7 +62,27 @@ Notifications.setNotificationHandler({
 })
 
 function Root() {
-  const { session } = useSession()
+  const { session, profile, isLoading } = useSession();
+  const [showWelcome, setShowWelcome] = useState(false);
+  
+
+  // when session/profile loads, if they haven't seen it yet, show the modal
+  useEffect(() => {
+    if (!isLoading && session && profile && !profile.welcome_seen) {
+      setShowWelcome(true);
+    }
+  }, [isLoading, session, profile]);
+
+  // when they finish the tour, flip the flag in supabase
+  const handleFinish = async () => {
+    setShowWelcome(false);
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ welcome_seen: true })
+        .eq('id', profile.id);
+    }
+  };
   
   // register a listener so tapping the notif navigates
   useEffect(() => {
@@ -61,20 +96,32 @@ function Root() {
   }, [])
 
   return (
+    <>
     <NavigationContainer>
-      {session ? <BottomTabNavigator /> : <AuthScreen />}
+      {session ? 
+      <>
+      <MainTabs />
+          <WelcomeModal
+        visible={showWelcome}
+        onClose={() => setShowWelcome(false)}
+      />
+      </>
+      : <AuthScreen />}
     </NavigationContainer>
+    </>
   )
 }
 
 export default Sentry.wrap(function App() {
   return (
-    <SessionProvider>
-      <ThemeProvider>
-        <GeofenceRegistrar />
-        <Root />
-      </ThemeProvider>
-    </SessionProvider>
+    <SafeAreaProvider>
+      <SessionProvider>
+        <ThemeProvider>
+          <GeofenceRegistrar />
+          <Root />
+        </ThemeProvider>
+      </SessionProvider>
+    </SafeAreaProvider>
   )
 });
 
@@ -93,9 +140,9 @@ function GeofenceRegistrar() {
       // 2) load radius
       const { data: profile } = await supabase
         .from('profiles')
-        .select('alert_radius')
+        .select('notify_radius')
         .single()
-      const radiusFeet = profile?.alert_radius ?? 0
+      const radiusFeet = profile?.notify_radius ?? 0
 
       // if user turned alerts OFF, stop any running geofences & exit
       if (radiusFeet <= 0) {

@@ -1,285 +1,498 @@
 // src/screens/MyAccountScreen.tsx
 
-/**
- * MyAccountScreen
- *
- * - Edit your full name (updates both Auth user_metadata and `profiles.full_name`)
- * - Choose your alert radius (0 = No Alerts) and save to `profiles.alert_radius`
- * - Sign out
- * - Toggle light/dark theme
- * - Upgrade or manage your subscription via Supabase Edge Function
- */
-
-import { Picker } from '@react-native-picker/picker'
-import * as WebBrowser from 'expo-web-browser'
-import React, { useEffect, useState } from 'react'
+import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Button,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
-  StyleSheet,
+  ScrollView,
   Switch,
-  Text,
   TextInput,
+  TextStyle,
+  TouchableOpacity,
   View,
-} from 'react-native'
-import { supabase } from '../../supabase'
-import { darkTheme } from '../design/theme'
-import { useTheme } from '../lib/themeContext'
-import { useSession } from '../lib/useSession'
+} from 'react-native';
+import { ThemedText, ThemedView } from '../components/Themed';
+import { supabase } from '../lib/supabase';
+import { useTheme } from '../lib/themeContext';
+import { useSession } from '../lib/useSession';
+import styles from './MyAccountScreen.styles';
 
-const RADIUS_OPTIONS = [
-  { label: 'No Alerts', value: 0 },
-  { label: '100 ft', value: 100 },
-  { label: '200 ft', value: 200 },
-  { label: '300 ft', value: 300 },
-  { label: '400 ft', value: 400 },
-  { label: '500 ft', value: 500 },
-  { label: '600 ft', value: 600 },
-  { label: '700 ft', value: 700 },
-  { label: '800 ft', value: 800 },
-  { label: '900 ft', value: 900 },
-  { label: '1000 ft', value: 1000 },
-]
+// Sentry for logging
+import * as Sentry from '@sentry/react-native';
 
-export default function MyAccountScreen() {
-  const { theme, toggleTheme } = useTheme()
-  const { user, isPremium, signOut } = useSession()
+// react-native-iap imports
+import {
+  Subscription,
+  endConnection,
+  finishTransaction,
+  purchaseErrorListener,
+  purchaseUpdatedListener,
+} from 'react-native-iap';
+import { fetchPlans, initIAP, purchasePremium } from '../lib/billing';
+import PremiumScreen from './PremiumScreen';
 
-  // Local state
-  const [fullName, setFullName] = useState<string>('')
-  const [savingProfile, setSavingProfile] = useState(false)
-  const [radius, setRadius] = useState<number>(200)
-  const [savingRadius, setSavingRadius] = useState(false)
-
-  // Load initial profile values
-  useEffect(() => {
-    if (!user) return
-
-    ;(async () => {
-      // Fetch from profiles table
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, alert_radius')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Failed loading profile', error.message)
-      } else {
-        setFullName(data.full_name ?? '')
-        setRadius(data.alert_radius ?? 0)
-      }
-    })()
-  }, [user])
-
-  // Save full_name to Auth metadata & profiles table
-  const handleSaveProfile = async () => {
-    setSavingProfile(true)
-
-    // Update Auth user_metadata
-    const { error: authErr } = await supabase.auth.updateUser({
-      data: { ['full_name']: fullName },
-    })
-    if (authErr) {
-      console.error('Auth metadata update error:', authErr.message)
-      Alert.alert('Error', 'Could not save your name.')
-    }
-
-    // Update profiles.full_name
-    const { error: profErr } = await supabase
-      .from('profiles')
-      .update({ ['full_name']: fullName })
-      .eq('id', user!.id)
-    if (profErr) {
-      console.error('Profiles table update error:', profErr.message)
-      Alert.alert('Error', 'Could not save your profile.')
-    } else {
-      Alert.alert('Success', 'Your name was saved!')
-    }
-
-    setSavingProfile(false)
-  }
-
-  // Save alert_radius to profiles table
-  const handleSaveRadius = async () => {
-    setSavingRadius(true)
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ alert_radius: radius })
-      .eq('id', user!.id)
-
-    setSavingRadius(false)
-
-    if (error) {
-      console.error('Radius save error:', error.message)
-      Alert.alert('Error', 'Could not save your alert radius.')
-    } else {
-      Alert.alert(
-        'Success',
-        radius === 0
-          ? 'Alerts turned OFF.'
-          : `You’ll be notified within ${radius} ft.`
-      )
-    }
-  }
-
-  // Launch Stripe checkout via Supabase Edge Function
-  const handleUpgrade = async () => {
-    try {
-      const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-            Authorization: `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!}`,
-          },
-          body: JSON.stringify({ priceId: 'price_1ReMraAmjjNRDdy4UPN7Nlam' }),
-        }
-      )
-      const text = await resp.text()
-
-      if (!resp.ok) {
-        console.error(`Function error (${resp.status}):`, text)
-        Alert.alert('Upgrade failed', text)
-        return
-      }
-
-      const { url } = JSON.parse(text)
-      if (!url) {
-        Alert.alert('Upgrade failed', 'No checkout URL returned.')
-        return
-      }
-
-      await WebBrowser.openBrowserAsync(url)
-    } catch (err: any) {
-      console.error('Unexpected upgrade error:', err)
-      Alert.alert('Upgrade failed', err.message || String(err))
-    }
-  }
-
-  const isDark = theme === darkTheme
-
-  return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text
-        style={{
-          fontSize: theme.typography.header.fontSize,
-          fontWeight: theme.typography.header.fontWeight as any,
-          color: theme.colors.text,
-          marginBottom: theme.spacing.md,
-        }}
-      >
-        My Account
-      </Text>
-
-      {/* Full Name */}
-      <TextInput
-        value={fullName}
-        onChangeText={setFullName}
-        placeholder="Full Name"
-        placeholderTextColor={theme.colors.textSecondary}
-        style={[
-          styles.input,
-          {
-            borderColor: theme.colors.border,
-            color: theme.colors.text,
-            borderRadius: theme.borderRadius.md,
-            padding: theme.spacing.sm,
-            marginBottom: theme.spacing.lg,
-          },
-        ]}
-      />
-      <View style={{ width: '100%', marginBottom: theme.spacing.lg }}>
-        <Button
-          title={savingProfile ? 'Saving…' : 'Save Name'}
-          onPress={handleSaveProfile}
-          color={theme.colors.primary}
-          disabled={savingProfile}
-        />
-      </View>
-
-      {/* Alert Radius */}
-      <Text style={{ color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-        Notify me when within:
-      </Text>
-      <View style={styles.pickerRow}>
-        <Picker
-          selectedValue={radius}
-          style={{ flex: 1, color: theme.colors.text }}
-          onValueChange={(v) => setRadius(v as number)}
-          mode={Platform.OS === 'android' ? 'dropdown' : 'dialog'}
-        >
-          {RADIUS_OPTIONS.map((opt) => (
-            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
-          ))}
-        </Picker>
-        <Button
-          title={savingRadius ? 'Saving…' : 'Save Radius'}
-          onPress={handleSaveRadius}
-          color={theme.colors.primary}
-          disabled={savingRadius}
-        />
-      </View>
-
-      {/* Theme Toggle */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginBottom: theme.spacing.lg,
-          width: '100%',
-        }}
-      >
-        <Text style={{ flex: 1, color: theme.colors.text }}>Dark Mode</Text>
-        <Switch
-          value={isDark}
-          onValueChange={toggleTheme}
-          trackColor={{
-            false: theme.colors.border,
-            true: theme.colors.primary,
-          }}
-          thumbColor={theme.colors.onPrimary}
-        />
-      </View>
-
-      {/* Subscription */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-        <Text style={{ flex: 1, color: theme.colors.text }}>
-          {isPremium ? 'Premium Member' : 'Free Tier'}
-        </Text>
-        <Button
-          title={isPremium ? 'Manage' : 'Upgrade'}
-          onPress={handleUpgrade}
-          color={theme.colors.primary}
-        />
-      </View>
-
-          {/* Sign Out */}
-      <View style={{ width: '100%', marginBottom: theme.spacing.lg }}>
-        <Button title="Sign Out" onPress={signOut} color={theme.colors.error} />
-      </View>
-
-      
-    </View>
-  )
+interface LocalProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url: string | null;
+  notifyRadius: number;
+  is_premium: boolean;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  input: {
-    width: '100%',
-    borderWidth: 1,
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-})
+export function MyAccountScreen() {
+  const { theme, mode, toggleTheme } = useTheme();
+  const { colors, spacing, borderRadius, typography } = theme;
+  const { user, profile, isLoading: sessLoading, signOut } = useSession();
+
+  // ——————————————————————————
+  // 1) Keep a local editable copy of your Supabase profile
+  // ——————————————————————————
+  const [localProfile, setLocalProfile] = useState<LocalProfile | null>(null);
+  useEffect(() => {
+    if (profile && !localProfile) {
+      setLocalProfile({
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        avatar_url: profile.avatar_url,
+        notifyRadius: profile.notifyRadius,
+        is_premium: profile.is_premium,
+      });
+    }
+  }, [profile]);
+
+  // ——————————————————————————
+  // 2) UI / loading state
+  // ——————————————————————————
+  const [uploading, setUploading] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savingRadius, setSavingRadius] = useState(false);
+
+  // ——————————————————————————
+  // 3) In-App Purchase state
+  // ——————————————————————————
+  const [plans, setPlans] = useState<Subscription[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const radiusOptions = [0, 250, 500, 1000, 2000, 5000];
+
+  // ——————————————————————————
+  // 4) Avatar picker & upload
+  // ——————————————————————————
+  const pickAvatar = async () => {
+    if (!user) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      return Alert.alert('Permission required', 'You need to allow photo access.');
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (result.canceled) return;
+
+    try {
+      setUploading(true);
+      const uri = result.assets[0].uri;
+      const resp = await fetch(uri);
+      const blob = await resp.blob();
+      if (blob.size === 0) throw new Error('Empty file');
+
+      const ext = blob.type.split('/')[1];
+      const filename = `${user.id}.${ext}`;
+      await supabase
+        .storage
+        .from('avatars')
+        .upload(filename, blob, { upsert: true, contentType: blob.type });
+
+      const { data: urlData } = supabase
+        .storage
+        .from('avatars')
+        .getPublicUrl(filename);
+
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user.id);
+      if (updErr) throw updErr;
+
+      setLocalProfile(p => p ? { ...p, avatar_url: urlData.publicUrl } : p);
+    } catch (e: any) {
+      Sentry.captureException(e);
+      Alert.alert('Upload failed', e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ——————————————————————————
+  // 5) Save name
+  // ——————————————————————————
+  const handleSaveName = async () => {
+    if (!user || !localProfile) return;
+    setSavingName(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ name: localProfile.name })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setLocalProfile(p => p ? { ...p, name: data.name } : p);
+    } catch (e: any) {
+      Sentry.captureException(e);
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  // ——————————————————————————
+  // 6) Save radius
+  // ——————————————————————————
+  const handleSaveRadius = async () => {
+    if (!user || !localProfile) return;
+    setSavingRadius(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ notify_radius: localProfile.notifyRadius })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setLocalProfile(p => p ? { ...p, notifyRadius: data.notify_radius } : p);
+    } catch (e: any) {
+      Sentry.captureException(e);
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingRadius(false);
+    }
+  };
+
+  // ——————————————————————————
+  // 7) IAP init + listeners
+  // ——————————————————————————
+  useEffect(() => {
+    let updateSub: any = null;
+    let errorSub: any = null;
+
+    (async () => {
+      Sentry.captureMessage('IAP initialization start');
+      try {
+        await initIAP();
+        const subs = await fetchPlans();
+        setPlans(subs);
+      } catch (e: any) {
+        Sentry.captureException(e);
+      } finally {
+        setPlansLoading(false);
+      }
+
+      updateSub = purchaseUpdatedListener(async (purchase) => {
+        try {
+          await finishTransaction({ purchase, isConsumable: false });
+          // ✅ update Supabase
+          if (user) {
+            const { error: supaErr } = await supabase
+              .from('profiles')
+              .update({ is_premium: true })
+              .eq('id', user.id);
+            if (supaErr) Sentry.captureException(supaErr);
+          }
+          // ✅ update local state
+          setLocalProfile(p => p ? { ...p, is_premium: true } : p);
+        } catch (ackErr: any) {
+          Sentry.captureException(ackErr);
+        }
+      });
+
+      errorSub = purchaseErrorListener((err) => {
+        Sentry.captureException(err);
+        Alert.alert('Purchase failed', err.message);
+      });
+    })();
+
+    return () => {
+      updateSub?.remove();
+      errorSub?.remove();
+      endConnection();
+    };
+  }, [user]);
+
+  // ——————————————————————————
+  // 8) Manual purchase button
+  // ——————————————————————————
+  const [ showPremium, setShowPremium ] = useState(false);
+  const handlePurchase = useCallback(
+    async (sku: string) => {
+      setPurchaseLoading(true);
+      try {
+        await purchasePremium(sku);
+        // after the SDK resolves, also update Supabase & state:
+        if (user) {
+          const { error: supaErr } = await supabase
+            .from('profiles')
+            .update({ is_premium: true })
+            .eq('id', user.id);
+          if (supaErr) throw supaErr;
+        }
+        setLocalProfile(p => p ? { ...p, is_premium: true } : p);
+      } catch (err: any) {
+        Sentry.captureException(err);
+        Alert.alert('Purchase Error', err.message ?? 'Unknown error');
+      } finally {
+        setPurchaseLoading(false);
+      }
+    },
+    [user]
+  );
+
+  // ——————————————————————————
+  // 9) If still loading…
+  // ——————————————————————————
+  if (sessLoading || !localProfile) {
+    return (
+      <ThemedView style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </ThemedView>
+    );
+  }
+
+  // ——————————————————————————
+  // 10) Delete Account
+  // ——————————————————————————
+
+const handleDeleteAccount = async () => {
+  // 1) confirm with the user
+  Alert.alert(
+    'Delete your account?',
+    'This will permanently remove all your data and sign you out.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setDeletingAccount(true);
+          try {
+            // 2) delete profile row
+            const { error: profileErr } = await supabase
+              .from('profiles')
+              .delete()
+              .eq('id', localProfile!.id);
+
+            if (profileErr) throw profileErr;
+
+            // 3) sign them out locally
+            await supabase.auth.signOut();
+
+            // 4) optionally: call an RPC or Admin API to delete the Auth user
+            //    — you will need to set this up server-side with service_role
+            // await supabase.functions.invoke('delete-user', { user_id: localProfile!.id });
+            //
+            // or, if you have the service key available (not recommended
+            // on the client!), you can do:
+            // await supabase.auth.api.deleteUser(localProfile!.id);
+
+          } catch (err: any) {
+            console.error('Account deletion error:', err);
+            Alert.alert('Couldn’t delete account', err.message);
+          } finally {
+            setDeletingAccount(false);
+          }
+        }
+      }
+    ]
+  );
+};
+
+
+
+
+
+
+
+  // ——————————————————————————
+  // 11) Inline text styles
+  // ——————————————————————————
+  const headerTextStyle: TextStyle = {
+    fontSize: typography.header.fontSize,
+    fontWeight: typography.header.fontWeight as any,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  };
+  const labelTextStyle: TextStyle = {
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight as any,
+    color: colors.text,
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoiding}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedView style={styles.container}>
+          {/* Avatar */}
+          <TouchableOpacity onPress={pickAvatar} disabled={uploading}>
+            {localProfile.avatar_url ? (
+              <Image
+                source={{ uri: localProfile.avatar_url }}
+                style={[styles.avatarBase, {
+                  width: spacing.md * 4,
+                  height: spacing.md * 4,
+                  borderRadius: spacing.md * 2,
+                }]}
+              />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surface }]} />
+            )}
+          </TouchableOpacity>
+
+          {/* Header */}
+          <ThemedText style={[styles.headerBase, headerTextStyle]}>My Account</ThemedText>
+
+          {/* Dark Mode */}
+          <View style={styles.field}>
+            <ThemedText style={labelTextStyle}>Dark Mode</ThemedText>
+            <Switch
+              value={mode === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={mode === 'dark' ? colors.onPrimary : colors.surface}
+            />
+          </View>
+
+          {/* Name */}
+          <View style={styles.field}>
+            <ThemedText style={labelTextStyle}>Name</ThemedText>
+            <TextInput
+              style={[styles.inputBase, {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text,
+                borderRadius: borderRadius.md,
+                padding: spacing.sm,
+                flex: 1,
+                marginLeft: spacing.sm,
+              }]}
+              value={localProfile.name}
+              onChangeText={text =>
+                setLocalProfile(p => p ? { ...p, name: text } : p)
+              }
+            />
+          </View>
+          <Button
+            title="Save Name"
+            color={colors.primary}
+            onPress={handleSaveName}
+            disabled={savingName}
+          />
+
+          {/* Radius */}
+          <View style={styles.field}>
+            <ThemedText style={labelTextStyle}>Notify Radius</ThemedText>
+            <View style={{
+              flex: 1,
+              marginLeft: spacing.sm,
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: borderRadius.md,
+            }}>
+              <Picker
+                selectedValue={localProfile.notifyRadius}
+                itemStyle={{ color: colors.text }}
+                onValueChange={val =>
+                  setLocalProfile(p => p ? { ...p, notifyRadius: val } : p)
+                }
+                dropdownIconColor={colors.text}
+                style={{ color: colors.text }}
+              >
+                {radiusOptions.map(r => (
+                  <Picker.Item
+                    key={r}
+                    value={r}
+                    label={r === 0 ? 'Off' : `${r} ft`}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+          <Button
+            title="Save Radius"
+            color={colors.primary}
+            onPress={handleSaveRadius}
+            disabled={savingRadius}
+          />
+
+        {/* Membership */}
+        <View style={styles.field}>
+          <ThemedText style={labelTextStyle}>Membership</ThemedText>
+          {localProfile.is_premium ? (
+            <ThemedText
+              style={[labelTextStyle, { color: colors.success, marginTop: spacing.sm }]}>
+              🎉 You’re Premium!
+            </ThemedText>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setShowPremium(true)}
+              style={{
+                backgroundColor: colors.accent,
+                padding: spacing.sm,
+                borderRadius: borderRadius.md,
+                alignItems: 'center',
+                marginTop: spacing.sm,
+              }}>
+              <ThemedText style={{ color: colors.onPrimary, fontWeight: 'bold' }}>
+                View Premium Options
+              </ThemedText>
+                  <Modal
+                    animationType="slide"
+                    transparent={false}
+                    visible={showPremium} 
+                  >
+                    <PremiumScreen onClose={() => setShowPremium(false)} />
+                  </Modal>
+            </TouchableOpacity>
+          )}
+        </View>
+
+
+          {/* Sign Out */}
+          <View style={{ marginTop: spacing.lg }}>
+            <Button title="Sign Out" color={colors.error} onPress={signOut} />
+          </View>
+
+          {/* Delete Account */}
+          <View style={{ marginTop: spacing.md }}>
+            <Button
+              title="Delete Account"
+              color={colors.error}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+            />
+          </View>
+
+        </ThemedView>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}

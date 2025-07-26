@@ -1,6 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "esModuleInterop": true,
     "strict": true,
     "paths": {
       "@/*": [
@@ -9,6 +10,10 @@
     },
     "jsx": "react-native", // or "react-jsx" if using React 17+
     "lib": ["dom", "esnext"],
+    "types": [
+      "react",
+      "react-native"                  // ← ensures TS loads those type packages
+    ]
   },
   "include": [
     "**/*.ts",

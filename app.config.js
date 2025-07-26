@@ -1,9 +1,15 @@
 // app.config.js
 import 'dotenv/config';
 
+// const iosAppId = process.env.ADMOB_IOS_APP_ID;
+
+
 export default {
+  // return {
+  //   ...config,
   expo: {
-    name: 'bathroomAppV2',
+    // ...config.expo,
+    name: 'Public Restroom Finder',
     slug: 'bathroomAppV2',
     version: '1.0.0',
     orientation: 'portrait',
@@ -31,6 +37,7 @@ export default {
         NSPhotoLibraryUsageDescription: "Allow access to your photo library so you can upload bathroom images.",
         GMSApiKey: "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM",
         ITSAppUsesNonExemptEncryption: false,
+        GADApplicationIdentifier: "ca-app-pub-5901242452853695~2944530360"
       },
       config: {
         "googleMaps": { "apiKey": "AIzaSyDnWXSd8RvTVKJZ0wVxZuojLCkZWcekPHM" }
@@ -49,13 +56,14 @@ export default {
       },
     },
     plugins: [
-      //   'react-native-google-mobile-ads',
-      //   {
-      //     // Your AdMob App IDs from the AdMob console:
-      //     android_app_id: 'ca-app-pub-5901242452853695~2399952491',
-      //     ios_app_id: 'ca-app-pub-5901242452853695~2944530360',
-      //   },
-
+      [
+        'react-native-google-mobile-ads',
+        {
+          // Your AdMob App IDs from the AdMob console:
+          androidAppId: "ca-app-pub-5901242452853695~2399952491",
+          iosAppId: "ca-app-pub-5901242452853695~2944530360",
+        },
+      ],
       [
       "@sentry/react-native/expo",
         {
@@ -68,4 +76,6 @@ export default {
       
     ],
   },
+// };
 };
+

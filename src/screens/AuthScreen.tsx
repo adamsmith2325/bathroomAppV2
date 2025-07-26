@@ -1,59 +1,178 @@
 // src/screens/AuthScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, TextInput, Alert } from 'react-native';
-import { useSession } from '../lib/useSession';
-import { useTheme } from '../lib/themeContext';
-import { Button } from '../components/Button';
-import { styles } from './AuthScreen.styles';
 
-export function AuthScreen() {
-  const { signIn, signUp } = useSession();
-  const { theme } = useTheme();
+import React, { useState } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { ThemedText, ThemedView } from '../components/Themed'
+import { useTheme } from '../lib/themeContext'
+import { useSession } from '../lib/useSession'
+import styles from './AuthScreen.styles'
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+// make sure your logo lives at src/assets/logo.png
+import logo from '../../assets/icons/loo-pin.png'
 
-  const handleSignIn = async () => {
+export default function AuthScreen() {
+  const { theme } = useTheme()
+  const { colors, spacing, borderRadius, typography } = theme
+  const { signIn, signUp } = useSession()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+
+  // extract header style as a typed TextStyle
+  const headerTextStyle: TextStyle = {
+    fontSize: typography.header.fontSize,
+    fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
+    color: colors.text,
+    marginBottom: spacing.sm,
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      await signIn(email, password);
-    } catch (err: any) {
-      Alert.alert('Sign In Failed', err.message || String(err));
+      if (isSigningUp) {
+        await signUp(email.trim(), password)
+      } else {
+        await signIn(email.trim(), password)
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'An unexpected error occurred')
+    } finally {
+      setLoading(false)
     }
-  };
-
-  const handleSignUp = async () => {
-    try {
-      await signUp(email, password);
-      console.log("Sign-up Pressed");
-    } catch (err: any) {
-      Alert.alert('Sign Up Failed', err.message || String(err));
-    }
-  };
+  }
 
   return (
-    <View style={styles.container(theme)}>
-      <Text style={styles.title(theme)}>Public Restroom Finder</Text>
-      <TextInput
-        style={styles.input(theme)}
-        placeholder="Email"
-        placeholderTextColor={theme.colors.textSecondary}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input(theme)}
-        placeholder="Password"
-        placeholderTextColor={theme.colors.textSecondary}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <View style={styles.buttonsRow}>
-        <Button label="Sign In" onPress={handleSignIn} />
-        <Button variant="secondary" label="Sign Up" onPress={handleSignUp} />
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoiding}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      /** tweak this if you have a header */
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Image source={logo} style={styles.logo} />
+
+      <ThemedText style={[styles.title, headerTextStyle]}>
+        {isSigningUp ? 'Create Account' : 'Welcome Back'}
+      </ThemedText>
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        {error && (
+          <ThemedText
+            style={[
+              styles.errorText,
+              { color: colors.error },
+              { fontSize: 16, fontWeight: '600' }
+            ]}
+          >
+            {error}
+          </ThemedText>
+        )}
+
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor={colors.textSecondary}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          style={[
+            styles.input,
+            { backgroundColor: colors.background, borderColor: colors.border },
+            {
+              fontSize: typography.body.fontSize,
+              fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
+              color: colors.text,
+            } as TextStyle,
+          ]}
+        />
+
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={[
+            styles.input,
+            { backgroundColor: colors.background, borderColor: colors.border },
+            {
+              fontSize: typography.body.fontSize,
+              fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
+              color: colors.text,
+            } as TextStyle,
+          ]}
+        />
+
+        {loading ? (
+          <ActivityIndicator
+            style={styles.buttonContainer}
+            size="large"
+            color={colors.primary}
+          />
+        ) : (
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={[
+              {
+                backgroundColor: colors.primary,
+                borderRadius: borderRadius.md,
+                paddingVertical: spacing.sm,
+                marginTop: spacing.sm,
+              },
+            ]}
+          >
+            <ThemedText
+              style={[
+                {
+                  fontSize: typography.body.fontSize,
+                  fontWeight: '600' as TextStyle['fontWeight'],
+                  color: colors.onPrimary,
+                  textAlign: 'center',
+                },
+              ]}
+            >
+              {isSigningUp ? 'Sign Up' : 'Sign In'}
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
-    </View>
-  );
+
+      <TouchableOpacity onPress={() => setIsSigningUp((p) => !p)}>
+        <ThemedText
+          style={[
+            styles.toggleText,
+            {
+              fontSize: typography.body.fontSize,
+              fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
+              color: colors.primary,
+            } as TextStyle,
+          ]}
+        >
+          {isSigningUp
+            ? 'Already have an account? Sign In'
+            : "Don't have an account? Sign Up"}
+        </ThemedText>
+
+      </TouchableOpacity>
+    </ThemedView>
+    </ScrollView>
+    </KeyboardAvoidingView>
+  )
 }

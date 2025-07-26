@@ -1,59 +1,75 @@
-// src/design/theme.ts
-import type { TextStyle } from 'react-native'
-
-export const lightTheme = {
+// theme.ts
+export type Theme = {
   colors: {
-    primary:       '#007aff',
-    accent:        '#ff9500',
-    background:    '#ffffff',
-    surface:       '#f2f2f2',
-    text:          '#000000',
-    textSecondary: '#666666',
-    success:       '#34c759',
-    warning:       '#ffcc00',
-    error:         '#ff3b30',
-    onPrimary:     '#ffffff',
-    border:        '#e0e0e0',
-  },
+    primary: string;
+    accent: string;
+    background: string;
+    surface: string;
+    text: string;
+    textSecondary: string;
+    success: string;
+    warning: string;
+    error: string;
+    onPrimary: string;
+    border: string;
+  };
   spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-  },
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+  };
   borderRadius: {
-    sm: 4,
-    md: 8,
-    lg: 16,
-  },
+    sm: number;
+    md: number;
+    lg: number;
+  };
   typography: {
-    header: {
-      fontSize:   24,
-      fontWeight: '700' as TextStyle['fontWeight'],
-    },
-    body: {
-      fontSize:   16,
-      fontWeight: '400' as TextStyle['fontWeight'],
-    },
-    small: {
-      fontSize:   14,
-      fontWeight: '300' as TextStyle['fontWeight'],
-    },
-  },
-}
+    header: { fontSize: number; fontWeight: string };
+    body: { fontSize: number; fontWeight: string };
+    small: { fontSize: number; fontWeight: string };
+  };
+  shadows: { sm: string; md: string; lg: string };
+};
 
-export const darkTheme: typeof lightTheme = {
+export const lightTheme: Theme = {
+  colors: {
+    primary: '#4fd1c5',
+    accent: '#68d391',
+    background: '#f9fafb',
+    surface: '#ffffff',
+    text: '#111827',
+    textSecondary: '#6b7280',
+    success: '#34d399',
+    warning: '#fbbf24',
+    error: '#f87171',
+    onPrimary: '#ffffff',
+    border: '#e5e7eb',
+  },
+  spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
+  borderRadius: { sm: 8, md: 16, lg: 24 },
+  typography: {
+    header: { fontSize: 28, fontWeight: '700' },
+    body: { fontSize: 18, fontWeight: '400' },
+    small: { fontSize: 14, fontWeight: '300' },
+  },
+  shadows: {
+    sm: '0px 1px 2px rgba(0,0,0,0.05)',
+    md: '0px 4px 6px rgba(0,0,0,0.1)',
+    lg: '0px 10px 15px rgba(0,0,0,0.1)',
+  },
+};
+
+export const darkTheme: Theme = {
   ...lightTheme,
   colors: {
     ...lightTheme.colors,
-    background:    '#000000',
-    surface:       '#1c1c1e',
-    text:          '#ffffff',
-    textSecondary: '#aaaaaa',
-    onPrimary:     '#000000',
-    border:        '#333333',
+    background: '#111827',
+    surface: '#1f2937',
+    text: '#f9fafb',
+    textSecondary: '#9ca3af',
+    onPrimary: '#111827',
+    border: '#374151',
   },
-}
-
-export type Theme = typeof lightTheme
+};
