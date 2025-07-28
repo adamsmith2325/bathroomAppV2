@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import React, { useState } from 'react'
 import { TouchableOpacity } from 'react-native'
-import WelcomeModal from '../components/WelcomeModal'
+// import WelcomeModal from '../components/WelcomeModal'
 import { useTheme } from '../lib/themeContext'
 import { useSession } from '../lib/useSession'
 import { AddBathroomScreen } from '../screens/AddBathroomScreen'
@@ -61,10 +61,10 @@ export function MainTabs() {
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
       <Tab.Screen name="Account" component={MyAccountScreen} />
     </Tab.Navigator>
-    <WelcomeModal
+    {/* <WelcomeModal
         visible={helpVisible}
         onFinish={handleHelpFinish}
-      />
+      /> */}
   </>
   )
 }
