@@ -24,7 +24,7 @@ export default StyleSheet.create<Styles>({
   },
   container: {
     flex: 1,
-    paddingTop: 16,
+    paddingTop: 36,
   },
   mapContainer: {
     flex: 1,

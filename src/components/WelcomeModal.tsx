@@ -4,15 +4,15 @@ import {
   Dimensions,
   Modal,
   ScrollView,
-  StyleSheet,
   TextStyle,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { ThemedText, ThemedView } from '../components/Themed';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
+import styles from './WelcomeModal.styles';
 
 const { width } = Dimensions.get('window');
 
@@ -83,7 +83,7 @@ export function WelcomeModal({ visible, onClose }: WelcomeModalProps)
       <View style={styles.overlay}>
         <ThemedView
           style={[
-            styles.modal,
+            styles.card,
             {
               backgroundColor: colors.background,
               borderRadius: borderRadius.md,
@@ -130,7 +130,7 @@ export function WelcomeModal({ visible, onClose }: WelcomeModalProps)
             ))}
           </ScrollView>
 
-          <View style={styles.dotsContainer}>
+          <View style={styles.overlay}>
             {SLIDES.map((_, i) => (
               <View
                 key={i}
@@ -175,32 +175,32 @@ export function WelcomeModal({ visible, onClose }: WelcomeModalProps)
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: {
-    width: width - 40,
-  },
-  slide: {
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
-  button: {
-    alignSelf: 'stretch',
-  },
-});
+// const styles = StyleSheet.create({
+//   overlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0,0,0,0.5)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modal: {
+//     width: width - 40,
+//   },
+//   slide: {
+//     justifyContent: 'center',
+//     paddingHorizontal: 10,
+//   },
+//   dotsContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     marginTop: 12,
+//   },
+//   dot: {
+//     width: 8,
+//     height: 8,
+//     borderRadius: 4,
+//     marginHorizontal: 4,
+//   },
+//   button: {
+//     alignSelf: 'stretch',
+//   },
+// });
