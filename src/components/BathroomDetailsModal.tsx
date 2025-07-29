@@ -44,6 +44,10 @@ interface Props {
   isPremium: boolean;
   isFav: boolean;
   avgRating: number;
+  userRating: number;                      // ← new
+  ratingSubmitting: boolean;               // ← new
+  onRate: (rating: number) => void;        // ← new
+  onSubmitRating: () => void;              // ← new
   onMarkUsed(): void;
   onToggleFavorite(): void;
   onGetDirections(): void;
@@ -61,6 +65,10 @@ export default function BathroomDetailsModal({
   isPremium,
   isFav,
   avgRating,
+  userRating,
+  ratingSubmitting,
+  onRate,
+  onSubmitRating,
   onMarkUsed,
   onToggleFavorite,
   onGetDirections,
@@ -158,6 +166,30 @@ export default function BathroomDetailsModal({
                   <ThemedText style={{ color: colors.text }}>
                     {avgRating !== null ? avgRating.toFixed(1) : 'No ratings yet'}
                   </ThemedText>
+                </View>
+                {/* Your personal rating (optional!) */}
+                <View style={{ marginTop: spacing.sm }}>
+                  <ThemedText style={{ color: colors.text, marginBottom: spacing.xs }}>
+                    How would you rate this?
+                  </ThemedText>
+                  <View style={{ flexDirection: 'row' }}>
+                    { [1,2,3,4,5].map(i => (
+                      <TouchableOpacity key={i} onPress={() => onRate(i)}>
+                        <Ionicons
+                          name={ userRating >= i ? 'star' : 'star-outline' }
+                          size={24}
+                          color={ colors.accent }
+                          style={{ marginRight: spacing.xs }}
+                        />
+                      </TouchableOpacity>
+                    )) }
+                  </View>
+                  <Button
+                    title="Submit Rating"
+                    onPress={onSubmitRating}
+                    color={colors.primary}
+                    disabled={ratingSubmitting}
+                  />
                 </View>
 
               {/* Usage count */}

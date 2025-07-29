@@ -1,4 +1,5 @@
 // src/screens/MapScreen.tsx
+import { Ionicons } from '@expo/vector-icons';
 import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
@@ -9,10 +10,9 @@ import {
   BannerAdSize
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
-import { recordEvent } from '../lib/reviewManager';
-
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText, ThemedView } from '../components/Themed';
+import { WelcomeModal } from '../components/WelcomeModal';
+import { recordEvent } from '../lib/reviewManager';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/useSession';
@@ -85,6 +85,7 @@ export default function MapScreen() {
     await fetchComments(bathroom.id);
     await fetchFavoriteStatus(bathroom.id);
     await fetchAvgRating(bathroom.id);
+    await fetchUserRating(bathroom.id);
     recordEvent('viewBathroom').catch(console.warn);
   };
 
@@ -108,6 +109,22 @@ export default function MapScreen() {
     if (!error && data) {
       const sum = data.reduce((acc, r) => acc + r.rating, 0);
       setAvgRating(data.length ? sum / data.length : 0);
+    }
+  };
+
+    // ** new **: fetch this user’s existing rating (or 0)
+  const fetchUserRating = async (bathroomId: string) => {
+    if (!user) return setUserRating(0);
+    const { data, error } = await supabase
+      .from('bathroom_ratings')
+      .select('rating')
+      .eq('bathroom_id', bathroomId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!error && data) {
+      setUserRating(data.rating);
+    } else {
+      setUserRating(0);
     }
   };
 
@@ -281,6 +298,10 @@ export default function MapScreen() {
           isPremium={isPremium}
           isFav={isFav}
           avgRating={avgRating}
+          userRating={userRating}
+          ratingSubmitting={ratingSubmitting}
+          onRate={(r) => setUserRating(r)}
+          onSubmitRating={handleRatingSubmit}
           onMarkUsed={handleMarkUsed}
           onToggleFavorite={toggleFavorite}
           onGetDirections={handleGetDirections}
@@ -306,10 +327,10 @@ export default function MapScreen() {
             />
           </View>
       )}
-      {/* <WelcomeModal
+      <WelcomeModal
         visible={helpVisible}
         onClose={() => setHelpVisible(false)}
-      /> */}
+      />
 
       {/* 2️⃣ The floating help button */}
       <TouchableOpacity
