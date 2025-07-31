@@ -52,6 +52,14 @@ export const defaultSlides: Slide[] = [
     title: 'Save favorites',
     body: 'Bookmark your go-to restrooms and manage your profile in Account.',
   },
+  {
+    title: 'Add a new restroom',
+    body: 'Tap the “+” button, drag the pin to the correct spot, and fill in its details.',
+  },
+  {
+    title: 'Customize notifications',
+    body: 'Set your notify radius in Account to get alerts when you’re near a restroom.',
+  },
 ]
 
 export function WelcomeModal({
