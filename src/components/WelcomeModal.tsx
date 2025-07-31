@@ -41,10 +41,6 @@ export const defaultSlides: Slide[] = [
     body: 'See entry codes, hours, and special instructions at each location.',
   },
   {
-    title: 'Mark as “Used”',
-    body: 'Log your visit to help track popular spots and earn badges.',
-  },
-  {
     title: 'Rate & comment',
     body: 'Leave a star-rating and share tips to guide fellow users.',
   },
@@ -57,9 +53,18 @@ export const defaultSlides: Slide[] = [
     body: 'Tap the “+” button, drag the pin to the correct spot, and fill in its details.',
   },
   {
-    title: 'Customize notifications',
-    body: 'Set your notify radius in Account to get alerts when you’re near a restroom.',
+    title: 'Get notified',
+    body: 'Set your notify radius in My Account to get alerts when you’re near a restroom.',
   },
+    {
+    title: 'Go Ad-Free',
+    body: 'Remove ads and unlock premium features with LooLocator Pro.',
+  },
+  {
+    title: 'Need help?',
+    body: 'Visit our Help Center or contact support for assistance.',
+  },
+
 ]
 
 export function WelcomeModal({
