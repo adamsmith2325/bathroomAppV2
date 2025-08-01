@@ -1,6 +1,7 @@
 // src/lib/reviewManager.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
+import { showInterstitialAd } from './adService';
 
 type EventKey = 'viewBathroom' | 'addBathroom' | 'markUsed';
 
@@ -51,11 +52,16 @@ export async function recordEvent(key: EventKey) {
 
   // 2) bail if we've already shown for this key
   const shown = await AsyncStorage.getItem(storageShownKey);
-  if (shown === 'true') return;
+  if (shown === 'true') 
+  {
+    showInterstitialAd();
+    return;
+  }
 
   // 3) if threshold reached, prompt & mark shown
   if (count >= threshold) {
     await askForReview();
     await AsyncStorage.setItem(storageShownKey, 'true');
+    await showInterstitialAd();
   }
 }
