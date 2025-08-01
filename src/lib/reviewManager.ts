@@ -57,7 +57,7 @@ export async function recordEvent(key: EventKey) {
   const shown = await AsyncStorage.getItem(storageShownKey);
   if (shown === 'true') 
   {
-    if (mod(count, 3) === 0) {
+    if (mod(count, 3) === 0 && count > threshold) {
       // Show interstitial ad every 3rd time
       showInterstitialAd();
     } // every 3rd time
