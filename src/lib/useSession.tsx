@@ -1,14 +1,15 @@
 // src/lib/useSession.tsx
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { Session, User } from '@supabase/supabase-js'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sentry from '@sentry/react-native';
+import type { Session, User } from '@supabase/supabase-js';
 import {
   createContext,
   ReactNode,
   useContext,
   useEffect,
   useState,
-} from 'react'
-import { supabase } from './supabase'
+} from 'react';
+import { supabase } from './supabase';
 
 interface Profile {
   id: string
@@ -89,7 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // a) load from cache
       const cached = await AsyncStorage.getItem(CACHE_KEY)
       if (cached && mounted) {
-        console.log('🛠️ [useSession] loaded profile from cache →', cached)
+        Sentry.captureMessage('🛠️ [useSession] loaded profile from cache →' + cached.toString)
         setProfile(JSON.parse(cached))
       }
 
@@ -116,7 +117,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .select('id, email, name, avatar_url, notify_radius, is_premium, welcome_seen')
         .eq('id', user.id)
         .single()
-
+      
       console.log('🛠️ [useSession] fetch profile →', { data, error })
       if (!error && data && mounted) {
         const prof: Profile = {
@@ -130,6 +131,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         }
         setProfile(prof)
         setIsPremium(prof.is_premium)
+        Sentry.captureMessage(prof.email);
         await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(prof))
         console.log('🛠️ [useSession] cached profile to disk')
       }

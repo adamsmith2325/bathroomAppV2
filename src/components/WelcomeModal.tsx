@@ -1,206 +1,170 @@
 // src/components/WelcomeModal.tsx
-import React, { useRef, useState } from 'react';
+import { useEffect, useState } from 'react'
 import {
-  Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
-  StyleSheet,
   TextStyle,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { ThemedText, ThemedView } from '../components/Themed';
-import { supabase } from '../lib/supabase';
-import { useTheme } from '../lib/themeContext';
-import { useSession } from '../lib/useSession';
+} from 'react-native'
+import { useTheme } from '../lib/themeContext'
+import { ThemedText } from './Themed'
+import styles from './WelcomeModal.styles'
 
-const { width } = Dimensions.get('window');
+export interface Slide {
+  title: string
+  body: string
+}
 
-const SLIDES = [
-  {
-    title: 'Welcome to LooLocator!',
-    description:
-      'Quickly find public restrooms near you on an interactive map.',
-  },
-  {
-    title: 'Add a Bathroom',
-    description:
-      'Tap anywhere on the map to drop a pin, enter details, and share with the community.',
-  },
-  {
-    title: 'Filter by Radius',
-    description:
-      'Set your notify radius in My Account to only see bathrooms within your preferred distance.',
-  },
-  {
-    title: 'Save Favorites',
-    description:
-      'Tap the ★ star icon on any bathroom to bookmark it for easy access later.',
-  },
-  {
-    title: 'Go Premium',
-    description:
-      'Upgrade to remove ads, unlock advanced filters, and support future features.',
-  },
-];
-
-interface WelcomeModalProps {
+export interface Props {
   visible: boolean
   onClose: () => void
+
+  // optional overrides
+  slides?: Slide[]
+  activeSlideIndex?: number
 }
 
-export function WelcomeModal({ visible, onClose }: WelcomeModalProps) 
-{
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography } = theme;
-  const { profile } = useSession();
-  const [slide, setSlide] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+export const defaultSlides: Slide[] = [
+  {
+    title: 'Welcome to LooLocator',
+    body: 'Your guide to clean, safe public restrooms in your area.',
+  },
+  {
+    title: 'Quickly find public restrooms',
+    body: 'Use our interactive map to locate clean, safe restrooms nearby.',
+  },
+  {
+    title: 'Tap a pin for details',
+    body: 'See entry codes, hours, and special instructions at each location.',
+  },
+  {
+    title: 'Rate & comment',
+    body: 'Leave a star-rating and share tips to guide fellow users.',
+  },
+  {
+    title: 'Save favorites',
+    body: 'Bookmark your go-to restrooms and manage your profile in Account.',
+  },
+  {
+    title: 'Add a new restroom',
+    body: 'Tap the “+” button, drag the pin to the correct spot, and fill in its details.',
+  },
+  {
+    title: 'Get notified',
+    body: 'Set your notify radius in My Account to get alerts when you’re near a restroom.',
+  },
+    {
+    title: 'Go Ad-Free',
+    body: 'Remove ads and unlock premium features with LooLocator Pro.',
+  },
+  {
+    title: 'Need help?',
+    body: 'Visit our Help Center or contact support for assistance.',
+  },
 
-  const handleClose = async () => {
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ welcome_seen: true })
-        .eq('id', profile.id);
+]
+
+export function WelcomeModal({
+  visible,
+  onClose,
+  slides = defaultSlides,
+  activeSlideIndex = 0,
+}: Props) {
+  const { theme } = useTheme()
+  const { colors, typography } = theme
+
+  // local slide state
+  const [activeSlide, setActiveSlide] = useState(activeSlideIndex)
+
+  // reset slide index when reopened
+  useEffect(() => {
+    if (visible) {
+      setActiveSlide(activeSlideIndex)
     }
-  };
+  }, [visible, activeSlideIndex])
 
-  const handleNext = () => {
-    if (slide < SLIDES.length - 1) {
-      const next = slide + 1;
-      setSlide(next);
-      scrollRef.current?.scrollTo({ x: next * width, animated: true });
-    } else {
-      handleClose();
-    }
-  };
+  const headerStyle: TextStyle = {
+    ...typography.header,
+    fontWeight: typography.header.fontWeight as TextStyle['fontWeight'],
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  }
+  const bodyStyle: TextStyle = {
+    ...typography.body,
+    fontWeight: typography.body.fontWeight as TextStyle['fontWeight'],
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: (typography.body.fontSize || 14) * 1.4,
+    marginBottom: 16,
+  }
 
-  if (!visible) return null;
+  const isLast = activeSlide === slides.length - 1
+  const slide = slides[activeSlide]
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
-        <ThemedView
-          style={[
-            styles.modal,
-            {
-              backgroundColor: colors.background,
-              borderRadius: borderRadius.md,
-              padding: spacing.lg,
-            },
-          ]}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoiding}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            scrollEnabled={false}
-            contentContainerStyle={{ width: width * SLIDES.length }}
-          >
-            {SLIDES.map((s, i) => (
-              <View key={i} style={[styles.slide, { width }]}>
-                <ThemedText
-                  style={{
-                    fontSize: typography.header.fontSize,
-                    // <-- cast here
-                    fontWeight: typography.header
-                      .fontWeight as TextStyle['fontWeight'],
-                    color: colors.text,
-                    marginBottom: spacing.md,
-                    textAlign: 'center',
-                  }}
-                >
-                  {s.title}
-                </ThemedText>
-                <ThemedText
-                  style={{
-                    fontSize: typography.body.fontSize,
-                    fontWeight: typography.body
-                      .fontWeight as TextStyle['fontWeight'],
-                    color: colors.text,
-                    lineHeight: typography.body.fontSize * 1.4,
-                    textAlign: 'center',
-                  }}
-                >
-                  {s.description}
-                </ThemedText>
-              </View>
-            ))}
-          </ScrollView>
-
-          <View style={styles.dotsContainer}>
-            {SLIDES.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor:
-                      i === slide ? colors.primary : colors.border,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-
-          <TouchableOpacity
-            onPress={handleNext}
-            style={[
-              styles.button,
-              {
-                backgroundColor: colors.primary,
-                borderRadius: borderRadius.sm,
-                paddingVertical: spacing.sm,
-                marginTop: spacing.lg,
-              },
-            ]}
-          >
-            <ThemedText
-              style={{
-                color: colors.primary,
-                fontSize: typography.body.fontSize,
-                fontWeight: typography.body
-                  .fontWeight as TextStyle['fontWeight'],
-                textAlign: 'center',
-              }}
+          <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <ScrollView
+              contentContainerStyle={styles.contentContainer}
+              keyboardShouldPersistTaps="handled"
             >
-              {slide < SLIDES.length - 1 ? 'Next' : 'Get Started'}
-            </ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
+              {/* Title & body */}
+              <ThemedText style={headerStyle}>{slide.title}</ThemedText>
+              <ThemedText style={bodyStyle}>{slide.body}</ThemedText>
+
+              {/* Pagination dots */}
+              <View style={styles.pagination}>
+                {slides.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.paginationDot,
+                      i === activeSlide && styles.paginationDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {/* Next / Done button */}
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  if (!isLast) {
+                    setActiveSlide(idx => idx + 1)
+                  } else {
+                    onClose()
+                  }
+                }}
+              >
+                <ThemedText
+                  style={[styles.actionBtnText, { color: colors.onPrimary }]}
+                >
+                  {isLast ? 'Done' : 'Next'}
+                </ThemedText>
+              </TouchableOpacity>
+
+              {/* Close link */}
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <ThemedText style={{ color: colors.error }}>Close</ThemedText>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: {
-    width: width - 40,
-  },
-  slide: {
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
-  button: {
-    alignSelf: 'stretch',
-  },
-});

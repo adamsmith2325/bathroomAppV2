@@ -11,15 +11,16 @@ import {
 } from 'react-native'
 import MapView, { LatLng, Marker } from 'react-native-maps'
 import { ThemedText, ThemedView } from '../components/Themed'
+import { recordEvent } from '../lib/reviewManager'
 import { supabase } from '../lib/supabase'
 import { useTheme } from '../lib/themeContext'
 import styles from './AddBathroomScreen.styles'
-import { recordEvent } from '../lib/reviewManager';
 
 // Sentry for logging
 import * as Sentry from '@sentry/react-native'
 
 export function AddBathroomScreen() {
+  
   const { theme } = useTheme()
   const { colors, spacing } = theme
 
