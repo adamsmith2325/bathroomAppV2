@@ -50,11 +50,18 @@ export async function recordEvent(key: EventKey) {
   const count = (parseInt(raw || '0', 10) || 0) + 1;
   await AsyncStorage.setItem(storageCountKey, String(count));
 
+  const mod = (a: number, b: number): number => {
+    return ((a % b) + b) % b;
+  };
   // 2) bail if we've already shown for this key
   const shown = await AsyncStorage.getItem(storageShownKey);
   if (shown === 'true') 
   {
-    showInterstitialAd();
+    if (mod(count, 3) === 0) {
+      // Show interstitial ad every 3rd time
+      showInterstitialAd();
+    } // every 3rd time
+
     return;
   }
 
@@ -62,6 +69,5 @@ export async function recordEvent(key: EventKey) {
   if (count >= threshold) {
     await askForReview();
     await AsyncStorage.setItem(storageShownKey, 'true');
-    await showInterstitialAd();
   }
 }
