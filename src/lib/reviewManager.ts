@@ -38,11 +38,21 @@ async function askForReview() {
 
 /**
  * Call this whenever one of your key events happens.
- * It will:
- *  - bump the counter for that event
- *  - if counter >= threshold && not shown yet → fire review prompt once
+ * If the user is a premium subscriber, nothing happens.
+ * Otherwise, it:
+ *  - bumps the counter for that event
+ *  - once ≥ threshold, shows review prompt exactly once
+ *  - every subsequent 3rd time (after threshold) it fires an interstitial ad
  */
-export async function recordEvent(key: EventKey) {
+export async function recordEvent(
+  key: EventKey,
+  isPremium: boolean
+): Promise<void> {
+  if (isPremium) {
+    // premium users get neither review nor ads
+    return;
+  }
+
   const { threshold, storageCountKey, storageShownKey } = RULES[key];
 
   // 1) increment counter
@@ -50,22 +60,16 @@ export async function recordEvent(key: EventKey) {
   const count = (parseInt(raw || '0', 10) || 0) + 1;
   await AsyncStorage.setItem(storageCountKey, String(count));
 
-  const mod = (a: number, b: number): number => {
-    return ((a % b) + b) % b;
-  };
-  // 2) bail if we've already shown for this key
+  // 2) if we've already shown the review prompt once, show an interstitial every 3rd event
   const shown = await AsyncStorage.getItem(storageShownKey);
-  if (shown === 'true') 
-  {
-    if (mod(count, 3) === 0 && count > threshold) {
-      // Show interstitial ad every 3rd time
+  if (shown === 'true') {
+    if (count > threshold && count % 3 === 0) {
       showInterstitialAd();
-    } // every 3rd time
-
+    }
     return;
   }
 
-  // 3) if threshold reached, prompt & mark shown
+  // 3) otherwise if threshold just reached, prompt review and mark it shown
   if (count >= threshold) {
     await askForReview();
     await AsyncStorage.setItem(storageShownKey, 'true');

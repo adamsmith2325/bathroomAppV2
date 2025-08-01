@@ -1,5 +1,5 @@
 // src/screens/AddBathroomScreen.tsx
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import { ThemedText, ThemedView } from '../components/Themed'
 import { recordEvent } from '../lib/reviewManager'
 import { supabase } from '../lib/supabase'
 import { useTheme } from '../lib/themeContext'
+import { useSession } from '../lib/useSession'
 import styles from './AddBathroomScreen.styles'
 
 // Sentry for logging
@@ -32,6 +33,7 @@ export function AddBathroomScreen() {
   const [entryCode, setEntryCode] = useState('')
   const [instructions, setInstructions] = useState('')
   const [submitting, setSubmitting] = useState(false)
+   const { isPremium } = useSession();
 
   // user taps map
   const onMapPress = (e: any) => {
@@ -69,7 +71,7 @@ export function AddBathroomScreen() {
       setTitle('')
       setEntryCode('')
       setInstructions('')
-      recordEvent('addBathroom').catch(console.warn);
+      recordEvent('addBathroom', isPremium).catch(console.warn);
     }
   }
 

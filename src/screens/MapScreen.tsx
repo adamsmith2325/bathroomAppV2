@@ -86,7 +86,7 @@ export default function MapScreen() {
     await fetchFavoriteStatus(bathroom.id);
     await fetchAvgRating(bathroom.id);
     await fetchUserRating(bathroom.id);
-    recordEvent('viewBathroom').catch(console.warn);
+    recordEvent('viewBathroom',isPremium).catch(console.warn);
   };
 
   // 4) Fetch usage count
@@ -190,7 +190,7 @@ export default function MapScreen() {
       user_id: user.id,
     });
     await fetchUsageCount(selectedBathroom.id);
-    recordEvent('markUsed').catch(console.warn);
+    recordEvent('markUsed', isPremium).catch(console.warn);
     Alert.alert('👍', 'Thanks for marking this bathroom as used!');
   };
 
