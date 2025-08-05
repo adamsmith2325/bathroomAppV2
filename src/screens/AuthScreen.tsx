@@ -1,6 +1,5 @@
 // src/screens/AuthScreen.tsx
-
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -20,7 +19,11 @@ import styles from './AuthScreen.styles'
 // make sure your logo lives at src/assets/logo.png
 import logo from '../../assets/icons/loo-pin.png'
 
+  // const CACHE_KEY = 'cached_profile'
+  // const cached = await AsyncStorage.getItem(CACHE_KEY)
+
 export default function AuthScreen() {
+
   const { theme } = useTheme()
   const { colors, spacing, borderRadius, typography } = theme
   const { signIn, signUp } = useSession()
@@ -29,7 +32,16 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isSigningUp, setIsSigningUp] = useState(false)
+  
+  // function asyncProfileMissing(){
+  //   if (cached) {
+  //  return false;
+  // } else {
+  //   return true;
+  // }
+  // }
+  const [isSigningUp, setIsSigningUp] = useState(true)
+  
 
   // extract header style as a typed TextStyle
   const headerTextStyle: TextStyle = {

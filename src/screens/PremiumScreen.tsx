@@ -2,7 +2,7 @@
 import { useNavigation } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
 
 import { ThemedText, ThemedView } from '../components/Themed';
@@ -121,7 +121,8 @@ export default function PremiumScreen({ onClose }: PremiumModalProps) {
 
   // ───────── UI ─────────
   return (
-    <ThemedView style={{ flex: 1, padding: spacing.lg, paddingTop: spacing.lg }}>
+    <ThemedView style={{ flex: 1, padding: spacing.lg, paddingTop: spacing.xl }}>
+      <ThemedView style={{ flex: 0, padding: spacing.lg, paddingTop: spacing.xl }} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         {/* Header */}
         <ThemedText

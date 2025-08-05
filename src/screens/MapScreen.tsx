@@ -35,6 +35,7 @@ export default function MapScreen() {
 
 
   const [helpVisible, setHelpVisible] = useState(false);
+
   const { user, isPremium } = useSession();
   const { theme } = useTheme();
   const { colors } = theme;
@@ -50,6 +51,21 @@ export default function MapScreen() {
 
   const [isFav, setIsFav] = useState(false);
   const { profile } = useSession();
+
+  // 0) Show Welcome Modalf
+  useEffect(() => {
+    (async () => {
+    if (profile && profile.welcome_seen.valueOf() === false){
+    // if the user has already seen the welcome modal, don't show it again
+    setHelpVisible(true);
+    await supabase
+      .from('profiles')
+      .update({ welcome_seen: true })
+      .eq('id', profile.id);
+  }
+      })();
+  }, []);
+  
   // 1) Get user location
   useEffect(() => {
     (async () => {
