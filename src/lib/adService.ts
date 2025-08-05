@@ -11,7 +11,7 @@ const unitId = __DEV__
 
 // create one singleton interstitial
 const interstitial = InterstitialAd.createForAdRequest(unitId, {
-  requestNonPersonalizedAdsOnly: true,
+  requestNonPersonalizedAdsOnly: false,
 });
 
 let isLoaded = false;

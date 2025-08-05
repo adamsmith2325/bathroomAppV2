@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Platform, TouchableOpacity, View } from 'react-native';
 import {
   BannerAd,
-  BannerAdSize
+  BannerAdSize,
+  TestIds
 } from 'react-native-google-mobile-ads';
 import MapView, { Marker } from 'react-native-maps';
 import { ThemedText, ThemedView } from '../components/Themed';
@@ -316,12 +317,18 @@ export default function MapScreen() {
           <View style={styles.adContainer}>
             <BannerAd
               unitId={
-                //  TestIds.BANNER
+                __DEV__
+               ? TestIds.BANNER 
+                // ? "ca-app-pub-5901242452853695/3188072947" 
+                :
                 Platform.OS === "ios"
                   ? "ca-app-pub-5901242452853695/3188072947"
                   : "ca-app-pub-5901242452853695/4501154615"
               }
-              size={BannerAdSize.FULL_BANNER}
+              requestOptions={{
+                requestNonPersonalizedAdsOnly: false,
+              }}
+              size={BannerAdSize.INLINE_ADAPTIVE_BANNER}
               onAdLoaded={() => Sentry.captureMessage("Banner Loaded")}
               onAdFailedToLoad={err => Sentry.captureMessage(err.message)}
             />
@@ -334,7 +341,10 @@ export default function MapScreen() {
 
       {/* 2️⃣ The floating help button */}
       <TouchableOpacity
-        onPress={() => setHelpVisible(true)}
+        onPress={
+          // () => MobileAds().openAdInspector().catch(err => Sentry.captureMessage(err.message))
+          () => setHelpVisible(true)
+        }
         style={[styles.helpButton, { backgroundColor: colors.surface }]}
       >
         <Ionicons
